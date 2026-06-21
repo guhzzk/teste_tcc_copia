@@ -89,7 +89,7 @@ form.addEventListener("submit", async (event) => {
     const senha = senhaInput.value;
 
     try {
-        const response = await fetch("http://localhost:3000/usuarios", {
+        const response = await fetch("/usuarios", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -103,7 +103,7 @@ form.addEventListener("submit", async (event) => {
             localStorage.setItem("token", data.token);
             localStorage.setItem("usuario", JSON.stringify(data.usuario));
             alert("Login realizado com sucesso!");
-            window.location.href = "dashboard.html";
+            window.location.href = "../home/home.html";
         } else {
             alert(data.error || "Erro ao fazer login");
         }
@@ -132,7 +132,7 @@ document.getElementById("btn-login").addEventListener("click", async function(e)
     btn.textContent = 'Entrando...';
 
     try {
-        const response = await fetch("http://localhost:3000/login",{
+        const response = await fetch("/login",{
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
