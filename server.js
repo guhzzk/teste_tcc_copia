@@ -227,6 +227,16 @@ server.post("/emprestimos", async (req, res) => {
 			return res.status(404).json({ error: "usuario nao encontrado"});
 		}
 
+		//verifica se o usuario ja tem algum emprestimo ativo (limite de 1 por pessoa)
+		const emprestimoAtivo = await Emprestimo.findOne({
+			where: { usuario_id: usuario_id, status: "ativo" }
+		});
+		if (emprestimoAtivo) {
+			return res.status(400).json({
+				error: "voce ja possui um livro emprestado. devolva-o antes de pegar outro"
+			});
+		}
+
 		//cria o emprestimo
 		const emprestimo = await Emprestimo.create({
 			usuario_id: usuario_id,
@@ -635,7 +645,8 @@ server.post("/livros", isAdminOrBibliotecario, async (req, res) => {
             editora, 
             ano, 
             categoria, 
-            quantidade_total 
+            quantidade_total,
+            capa_url
         } = req.body;
         
         // VALIDAÇÃO: verifica se os campos obrigatórios existem
@@ -653,7 +664,8 @@ server.post("/livros", isAdminOrBibliotecario, async (req, res) => {
             ano: ano || null,
             categoria: categoria || null,
             quantidade_total: quantidade_total || 1,
-            quantidade_disponivel: quantidade_total || 1
+            quantidade_disponivel: quantidade_total || 1,
+            capa_url: capa_url || null
         });
         
         console.log("Livro criado:", novoLivro.toJSON()); // ← DEBUG
