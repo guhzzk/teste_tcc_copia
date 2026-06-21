@@ -40,8 +40,11 @@ const livros = db.sequelize.define("livros", {
         type: db.Sequelize.INTEGER,
         allowNull: true
     },
-
-}, {
+    capa_url: {
+        type: db.Sequelize.STRING,
+        allowNull: true
+    },
+ {
     timestamps: false,
     tableName: 'livros'
 });
