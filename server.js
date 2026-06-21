@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 const server = express();
 const port = 3000;
 const usuarios = require("./models/usuarios");
@@ -16,6 +17,9 @@ server.use(cors());
 server.use(bodyParser.urlencoded({extended: false}));
 server.use(bodyParser.json());
 server.use(express.json());
+
+// serve os arquivos do front-end (html, css, js, imagens) que estao em TR/
+server.use(express.static(path.join(__dirname, "TR")));
 
 usuarios.hasMany(Emprestimo, { foreignKey: 'usuario_id' });
 Emprestimo.belongsTo(usuarios, { foreignKey: 'usuario_id' });
@@ -769,11 +773,7 @@ server.get("/admin/estatisticas", isAdmin, async (req, res) => {
 });
 //================================================
 server.get("/", function(req, res){
-	usuarios.findAll().then(function(usuarios){
-		res.send({usuarios: usuarios})
-	}).catch(function(erro){
-		res.send("erro ao buscar dados" + erro)
-	})
+	res.sendFile(path.join(__dirname, "TR", "login", "index.html"));
 });
 
 server.get("/:nome", function(req,res){
