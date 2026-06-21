@@ -145,7 +145,7 @@ livro.addEventListener("submit", async (event) => {
     const quantidade_disponivel = quantidade_disponivelInput.value;
 
     try {
-        const response = await fetch("http://localhost:3000/livros", {
+        const response = await fetch("/livros", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -159,7 +159,7 @@ livro.addEventListener("submit", async (event) => {
             localStorage.setItem("token", data.token);
             localStorage.setItem("livros", JSON.stringify(data.livros));
             alert("livro enviado com sucesso!");
-            window.location.href = "dashboard.html";
+            window.location.href = "livros.html";
         } else {
             alert(data.error || "Erro ao enviar livro");
         }
