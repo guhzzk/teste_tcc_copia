@@ -6,7 +6,7 @@ document.getElementById("form-bibliotecario").addEventListener("submit", async f
     const senha = document.getElementById("password").value;
 
     if (!email || !senha) {
-        alert("preencha todos os campos");
+        showToast('Preencha todos os campos', 'warning');
         return;
     }
 
@@ -29,13 +29,13 @@ document.getElementById("form-bibliotecario").addEventListener("submit", async f
             localStorage.setItem("usuarioLogado", JSON.stringify(data.usuario));
             window.location.href = "../home/home.html";
         } else {
-            alert(data.error || "Erro ao fazer login");
+            showToast(data.error || 'Erro ao fazer login', 'error');
             btn.disabled = false;
             btn.textContent = "Entrar";
         }
     } catch (error) {
         console.error("Erro:", error);
-        alert("Erro de conexão com o servidor");
+        showToast('Erro de conexão com o servidor', 'error');
         btn.disabled = false;
         btn.textContent = "Entrar";
     }
