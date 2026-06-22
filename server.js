@@ -6,10 +6,13 @@ const port = 3000;
 const usuarios = require("./models/usuarios");
 const livros = require("./models/livros");
 const Emprestimo = require("./models/Emprestimos");
+const Reserva = require("./models/Reservas");
+const Solicitacao = require("./models/Solicitacoes");
 const bodyParser = require("body-parser");
 const { enviarlembreteDevolucao } = require("./TR/email/config/email");
 const { Op } = require('sequelize');
 const { sequelize } = require('./models/db');
+const PDFDocument = require('pdfkit');
 
  
 server.use(cors());
@@ -26,6 +29,18 @@ Emprestimo.belongsTo(usuarios, { foreignKey: 'usuario_id' });
 
 livros.hasMany(Emprestimo, { foreignKey: 'livro_id' });
 Emprestimo.belongsTo(livros, { foreignKey: 'livro_id' });
+
+usuarios.hasMany(Reserva, { foreignKey: 'usuario_id' });
+Reserva.belongsTo(usuarios, { foreignKey: 'usuario_id' });
+
+livros.hasMany(Reserva, { foreignKey: 'livro_id' });
+Reserva.belongsTo(livros, { foreignKey: 'livro_id' });
+
+usuarios.hasMany(Solicitacao, { foreignKey: 'usuario_id' });
+Solicitacao.belongsTo(usuarios, { foreignKey: 'usuario_id' });
+
+livros.hasMany(Solicitacao, { foreignKey: 'livro_id' });
+Solicitacao.belongsTo(livros, { foreignKey: 'livro_id' });
 
 //cadastrar usuarios
 server.post("/usuarios", async (req, res) => {
@@ -227,13 +242,25 @@ server.post("/emprestimos", async (req, res) => {
 			return res.status(404).json({ error: "usuario nao encontrado"});
 		}
 
-		//verifica se o usuario ja tem algum emprestimo ativo (limite de 1 por pessoa)
-		const emprestimoAtivo = await Emprestimo.findOne({
+		//busca todos os emprestimos ativos do usuario
+		const emprestimosAtivos = await Emprestimo.findAll({
 			where: { usuario_id: usuario_id, status: "ativo" }
 		});
-		if (emprestimoAtivo) {
+
+		const LIMITE_MAXIMO_EMPRESTIMOS = 2;
+
+		//verifica se ja esta com esse mesmo livro (nunca pode ter 2 copias do mesmo titulo)
+		const jaTemEsseLivro = emprestimosAtivos.some(e => e.livro_id === Number(livro_id));
+		if (jaTemEsseLivro) {
 			return res.status(400).json({
-				error: "voce ja possui um livro emprestado. devolva-o antes de pegar outro"
+				error: "voce ja esta com um exemplar deste livro emprestado"
+			});
+		}
+
+		//verifica se atingiu o limite maximo de livros diferentes
+		if (emprestimosAtivos.length >= LIMITE_MAXIMO_EMPRESTIMOS) {
+			return res.status(400).json({
+				error: `voce ja atingiu o limite de ${LIMITE_MAXIMO_EMPRESTIMOS} livros emprestados ao mesmo tempo`
 			});
 		}
 
@@ -361,6 +388,16 @@ server.put("/emprestimos/:id/devolver", async (req, res) => {
 		await livro.update({
 			quantidade_disponivel: livro.quantidade_disponivel + 1
 		});
+
+		//se alguem tinha reservado esse livro, avisa que ja esta disponivel
+		// (pega a reserva mais antiga ainda ativa para esse livro)
+		const reservaMaisAntiga = await Reserva.findOne({
+			where: { livro_id: emprestimo.livro_id, status: "ativa" },
+			order: [['data_reserva', 'ASC']]
+		});
+		if (reservaMaisAntiga) {
+			await reservaMaisAntiga.update({ status: "disponivel" });
+		}
 
 		res.json({ message: "livro devolvido com sucesso"});
 
@@ -563,6 +600,114 @@ server.get("/notificacoes/verificar", async (req, res) => {
 		});
 	} catch (error) {
 		console.error("erro:", error);
+		res.status(500).json({ error: error.message });
+	}
+});
+
+// ============ RESERVAS DE LIVRO ============
+
+//criar uma reserva (quando o livro esta indisponivel)
+server.post("/reservas", async (req, res) => {
+	try {
+		const { usuario_id, livro_id } = req.body;
+
+		const livro = await livros.findByPk(livro_id);
+		if (!livro) {
+			return res.status(404).json({ error: "livro nao encontrado" });
+		}
+
+		if (livro.quantidade_disponivel > 0) {
+			return res.status(400).json({ error: "esse livro ja esta disponivel, nao precisa reservar" });
+		}
+
+		//verifica se o usuario ja tem reserva ativa para esse livro
+		const reservaExistente = await Reserva.findOne({
+			where: { usuario_id: usuario_id, livro_id: livro_id, status: { [Op.in]: ["ativa", "disponivel"] } }
+		});
+		if (reservaExistente) {
+			return res.status(400).json({ error: "voce ja tem uma reserva para esse livro" });
+		}
+
+		const novaReserva = await Reserva.create({
+			usuario_id: usuario_id,
+			livro_id: livro_id,
+			data_reserva: new Date(),
+			status: "ativa"
+		});
+
+		res.status(201).json({ message: "reserva feita com sucesso", reserva: novaReserva });
+	} catch (error) {
+		console.error("erro ao reservar:", error);
+		res.status(500).json({ error: error.message });
+	}
+});
+
+//listar reservas de um usuario
+server.get("/usuarios/:id/reservas", async (req, res) => {
+	try {
+		const { id } = req.params;
+
+		const reservas = await Reserva.findAll({
+			where: { usuario_id: id, status: { [Op.in]: ["ativa", "disponivel"] } },
+			include: [{ model: livros, attributes: ['titulo', 'autor', 'capa_url'] }],
+			order: [['data_reserva', 'DESC']]
+		});
+
+		res.json(reservas);
+	} catch (error) {
+		console.error("erro ao listar reservas:", error);
+		res.status(500).json({ error: error.message });
+	}
+});
+
+//cancelar uma reserva
+server.delete("/reservas/:id", async (req, res) => {
+	try {
+		const { id } = req.params;
+
+		const reserva = await Reserva.findByPk(id);
+		if (!reserva) {
+			return res.status(404).json({ error: "reserva nao encontrada" });
+		}
+
+		await reserva.update({ status: "cancelada" });
+		res.json({ message: "reserva cancelada com sucesso" });
+	} catch (error) {
+		console.error("erro ao cancelar reserva:", error);
+		res.status(500).json({ error: error.message });
+	}
+});
+
+// ============ SOLICITACAO DE EMPRESTIMO EXTRA ============
+
+//aluno solicita um emprestimo extra (quando ja atingiu o limite de 2 livros)
+server.post("/solicitacoes", async (req, res) => {
+	try {
+		const { usuario_id, livro_id } = req.body;
+
+		const livro = await livros.findByPk(livro_id);
+		if (!livro) {
+			return res.status(404).json({ error: "livro nao encontrado" });
+		}
+
+		//verifica se ja existe solicitacao pendente igual
+		const solicitacaoExistente = await Solicitacao.findOne({
+			where: { usuario_id: usuario_id, livro_id: livro_id, status: "pendente" }
+		});
+		if (solicitacaoExistente) {
+			return res.status(400).json({ error: "voce ja tem uma solicitacao pendente para esse livro" });
+		}
+
+		const novaSolicitacao = await Solicitacao.create({
+			usuario_id: usuario_id,
+			livro_id: livro_id,
+			data_solicitacao: new Date(),
+			status: "pendente"
+		});
+
+		res.status(201).json({ message: "solicitacao enviada. aguarde a aprovacao do bibliotecario", solicitacao: novaSolicitacao });
+	} catch (error) {
+		console.error("erro ao solicitar emprestimo extra:", error);
 		res.status(500).json({ error: error.message });
 	}
 });
@@ -783,6 +928,146 @@ server.get("/admin/estatisticas", isAdmin, async (req, res) => {
 		res.status(500).json({ error: error.message });
 	}
 });
+//================================================
+
+// ============ GESTAO DE SOLICITACOES (bibliotecario/admin) ============
+
+//lista todas as solicitacoes pendentes
+server.get("/solicitacoes", isAdminOrBibliotecario, async (req, res) => {
+	try {
+		const solicitacoes = await Solicitacao.findAll({
+			where: { status: "pendente" },
+			include: [
+				{ model: usuarios, attributes: ['nome', 'email'] },
+				{ model: livros, attributes: ['titulo', 'autor'] }
+			],
+			order: [['data_solicitacao', 'ASC']]
+		});
+		res.json(solicitacoes);
+	} catch (error) {
+		console.error("erro ao listar solicitacoes:", error);
+		res.status(500).json({ error: error.message });
+	}
+});
+
+//aprova uma solicitacao: cria o emprestimo de fato, ignorando o limite normal
+server.put("/solicitacoes/:id/aprovar", isAdminOrBibliotecario, async (req, res) => {
+	try {
+		const { id } = req.params;
+
+		const solicitacao = await Solicitacao.findByPk(id);
+		if (!solicitacao) {
+			return res.status(404).json({ error: "solicitacao nao encontrada" });
+		}
+		if (solicitacao.status !== "pendente") {
+			return res.status(400).json({ error: "essa solicitacao ja foi respondida" });
+		}
+
+		const livro = await livros.findByPk(solicitacao.livro_id);
+		if (!livro || livro.quantidade_disponivel <= 0) {
+			return res.status(400).json({ error: "livro sem exemplares disponiveis. rejeite a solicitacao" });
+		}
+
+		const dataPrevista = new Date();
+		dataPrevista.setDate(dataPrevista.getDate() + 7);
+
+		const novoEmprestimo = await Emprestimo.create({
+			usuario_id: solicitacao.usuario_id,
+			livro_id: solicitacao.livro_id,
+			data_emprestimo: new Date(),
+			data_prevista_devolucao: dataPrevista,
+			status: "ativo"
+		});
+
+		await livro.update({ quantidade_disponivel: livro.quantidade_disponivel - 1 });
+		await solicitacao.update({ status: "aprovada" });
+
+		res.json({ message: "solicitacao aprovada e emprestimo criado", emprestimo: novoEmprestimo });
+	} catch (error) {
+		console.error("erro ao aprovar solicitacao:", error);
+		res.status(500).json({ error: error.message });
+	}
+});
+
+//rejeita uma solicitacao
+server.put("/solicitacoes/:id/rejeitar", isAdminOrBibliotecario, async (req, res) => {
+	try {
+		const { id } = req.params;
+
+		const solicitacao = await Solicitacao.findByPk(id);
+		if (!solicitacao) {
+			return res.status(404).json({ error: "solicitacao nao encontrada" });
+		}
+		if (solicitacao.status !== "pendente") {
+			return res.status(400).json({ error: "essa solicitacao ja foi respondida" });
+		}
+
+		await solicitacao.update({ status: "rejeitada" });
+		res.json({ message: "solicitacao rejeitada" });
+	} catch (error) {
+		console.error("erro ao rejeitar solicitacao:", error);
+		res.status(500).json({ error: error.message });
+	}
+});
+
+// ============ RELATORIO EM PDF (bibliotecario/admin) ============
+
+server.get("/relatorio/emprestimos/pdf", isAdminOrBibliotecario, async (req, res) => {
+	try {
+		const todosEmprestimos = await Emprestimo.findAll({
+			include: [
+				{ model: usuarios, attributes: ['nome', 'email'] },
+				{ model: livros, attributes: ['titulo', 'autor'] }
+			],
+			order: [['data_emprestimo', 'DESC']]
+		});
+
+		const totalUsuarios = await usuarios.count();
+		const totalLivros = await livros.count();
+		const emprestimosAtivos = await Emprestimo.count({ where: { status: 'ativo' } });
+
+		const doc = new PDFDocument({ margin: 40 });
+
+		res.setHeader('Content-Type', 'application/pdf');
+		res.setHeader('Content-Disposition', 'attachment; filename="relatorio-emprestimos.pdf"');
+		doc.pipe(res);
+
+		doc.fontSize(20).text('Relatório de Empréstimos - Biblioteca Libro', { align: 'center' });
+		doc.moveDown();
+		doc.fontSize(10).fillColor('#555').text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, { align: 'center' });
+		doc.moveDown(1.5);
+
+		doc.fillColor('#000').fontSize(13).text('Resumo geral');
+		doc.fontSize(11).text(`Total de usuários cadastrados: ${totalUsuarios}`);
+		doc.text(`Total de livros no catálogo: ${totalLivros}`);
+		doc.text(`Empréstimos ativos no momento: ${emprestimosAtivos}`);
+		doc.moveDown(1.5);
+
+		doc.fontSize(13).text('Histórico de empréstimos');
+		doc.moveDown(0.5);
+
+		if (todosEmprestimos.length === 0) {
+			doc.fontSize(11).text('Nenhum empréstimo registrado ainda.');
+		}
+
+		todosEmprestimos.forEach((emp, index) => {
+			const nomeUsuario = emp.usuario ? emp.usuario.nome : '(usuário removido)';
+			const tituloLivro = emp.livro ? emp.livro.titulo : '(livro removido)';
+			const dataEmprestimo = emp.data_emprestimo ? new Date(emp.data_emprestimo).toLocaleDateString('pt-BR') : '-';
+			const dataPrevista = emp.data_prevista_devolucao ? new Date(emp.data_prevista_devolucao).toLocaleDateString('pt-BR') : '-';
+
+			doc.fontSize(10).fillColor('#000').text(
+				`${index + 1}. ${tituloLivro} — ${nomeUsuario} | Emprestado: ${dataEmprestimo} | Previsto: ${dataPrevista} | Status: ${emp.status}`
+			);
+		});
+
+		doc.end();
+	} catch (error) {
+		console.error("erro ao gerar relatorio pdf:", error);
+		res.status(500).json({ error: error.message });
+	}
+});
+
 //================================================
 server.get("/", function(req, res){
 	res.redirect("/login/index.html");
