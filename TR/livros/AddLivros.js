@@ -158,15 +158,15 @@ livro.addEventListener("submit", async (event) => {
         if (response.ok) {
             localStorage.setItem("token", data.token);
             localStorage.setItem("livros", JSON.stringify(data.livros));
-            alert("livro enviado com sucesso!");
+            showToast('Livro cadastrado com sucesso!', 'success');
             window.location.href = "livros.html";
         } else {
-            alert(data.error || "Erro ao enviar livro");
+            showToast(data.error || 'Erro ao enviar livro', 'error');
         }
 
     } catch (error) {
         console.error("Erro:", error);
-        alert("Erro de conexão com o servidor");
+        showToast('Erro de conexão com o servidor', 'error');
     }
 });
 
