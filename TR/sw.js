@@ -2,8 +2,16 @@
 // cacheia apenas os arquivos estaticos do front-end (html, css, js, imagens).
 // chamadas de API (login, livros, emprestimos, etc.) sempre vao direto para a rede,
 // para garantir que os dados mostrados sejam sempre atuais.
+//
+// estrategia: "network-first" - sempre tenta buscar a versao mais nova na rede
+// primeiro. So usa o cache se o celular estiver sem internet. Isso evita o app
+// ficar "travado" numa versao antiga depois que o site e atualizado.
+//
+// IMPORTANTE: sempre que o codigo do site for atualizado, troque o numero da
+// versao abaixo (v2 -> v3 -> v4...). Isso forca o celular a esquecer o cache
+// antigo e buscar os arquivos novos.
 
-const CACHE_NAME = "libro-cache-v1";
+const CACHE_NAME = "libro-cache-v2";
 
 const ARQUIVOS_PARA_CACHEAR = [
   "/login/index.html",
@@ -51,16 +59,17 @@ self.addEventListener("fetch", (event) => {
   }
 
   event.respondWith(
-    caches.match(event.request).then((respostaCache) => {
-      if (respostaCache) {
-        return respostaCache;
-      }
-      return fetch(event.request).then((respostaRede) => {
+    fetch(event.request)
+      .then((respostaRede) => {
+        // deu certo buscar na rede: atualiza o cache com a versao mais nova
         return caches.open(CACHE_NAME).then((cache) => {
           cache.put(event.request, respostaRede.clone());
           return respostaRede;
         });
-      });
-    }).catch(() => fetch(event.request))
+      })
+      .catch(() => {
+        // sem internet: usa o que tiver salvo no cache, se existir
+        return caches.match(event.request);
+      })
   );
 });
