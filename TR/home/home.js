@@ -403,7 +403,7 @@ async function mostrarMinhasReservas() {
 }
 
 window.reservarLivro = async function(livroId) {
-    if (!confirm('Esse livro está indisponível agora. Deseja reservar para quando ele voltar?')) return;
+    if (!await showConfirm('Esse livro está indisponível agora. Deseja reservar para quando ele voltar?', 'Reservar')) return;
 
     try {
         const response = await fetch('/reservas', {
@@ -425,7 +425,7 @@ window.reservarLivro = async function(livroId) {
 };
 
 window.cancelarReserva = async function(reservaId) {
-    if (!confirm('Deseja cancelar essa reserva?')) return;
+    if (!await showConfirm('Deseja cancelar essa reserva?', 'Cancelar reserva', 'Não')) return;
 
     try {
         const response = await fetch(`/reservas/${reservaId}`, { method: 'DELETE' });
@@ -444,7 +444,7 @@ window.cancelarReserva = async function(reservaId) {
 
 
 window.renovarEmprestimo = async function(emprestimoId) {
-    if(!confirm('deseja renovar este emprestimo por mais 7 dias?')) return;
+    if(!await showConfirm('Deseja renovar este empréstimo por mais 7 dias?', 'Renovar')) return;
 
     try {
         const response = await fetch(`/emprestimos/${emprestimoId}/renovar`,{
@@ -467,7 +467,7 @@ window.renovarEmprestimo = async function(emprestimoId) {
 
 async function deletarEmprestimo(idEmprestimo, botaoClicado) {
     
-    if(!confirm("tem certeza que deseja apagar este registro de emprestimo?")){
+    if(!await showConfirm("Tem certeza que deseja apagar este registro de empréstimo?", "Apagar", "Cancelar")){
         return;
     }
     try{
@@ -491,7 +491,7 @@ window.solicitarEmprestimo = async function(livroId) {
     const dataDevolucao = new Date();
     dataDevolucao.setDate(dataDevolucao.getDate() + 7);
     
-    if (!confirm('Deseja pegar este livro emprestado?')) return;
+    if (!await showConfirm('Deseja pegar este livro emprestado?', 'Pegar emprestado')) return;
     
     try {
         const response = await fetch('/emprestimos', {
@@ -515,7 +515,7 @@ window.solicitarEmprestimo = async function(livroId) {
             }
         } else if (data.error && data.error.includes('limite')) {
             //usuario atingiu o limite de livros simultaneos: oferece solicitar aprovacao
-            if (confirm(`${data.error}.\n\nDeseja enviar uma solicitação para o bibliotecário aprovar esse empréstimo extra?`)) {
+            if (await showConfirm(`${data.error}. Deseja enviar uma solicitação para o bibliotecário aprovar esse empréstimo extra?`, 'Enviar solicitação')) {
                 solicitarEmprestimoExtra(livroId);
             }
         } else {
@@ -547,7 +547,7 @@ window.solicitarEmprestimoExtra = async function(livroId) {
 };
 
 window.devolverLivro = async function(emprestimoId) {
-    if (!confirm('Confirmar devolução do livro?')) return;
+    if (!await showConfirm('Confirmar devolução do livro?', 'Devolver')) return;
     
     try {
         const response = await fetch(`/emprestimos/${emprestimoId}/devolver`, {
@@ -953,7 +953,7 @@ async function mostrarSolicitacoes() {
 }
 
 window.responderSolicitacao = async function(id, acao) {
-    if (!confirm(acao === 'aprovar' ? 'Aprovar essa solicitação?' : 'Rejeitar essa solicitação?')) return;
+    if (!await showConfirm(acao === 'aprovar' ? 'Aprovar essa solicitação?' : 'Rejeitar essa solicitação?', acao === 'aprovar' ? 'Aprovar' : 'Rejeitar')) return;
 
     try {
         const response = await fetch(`/solicitacoes/${id}/${acao}`, {
@@ -1016,8 +1016,7 @@ function mostrarBackup() {
 window.alterarTipoUsuario = async function(userId, novoTipo) {
     console.log("Alterando usuário:", userId, "para:", novoTipo);
     
-    const confirmacao = confirm(`⚠️ Tem certeza que quer alterar este usuário para ${novoTipo.toUpperCase()}?`);
-    if (!confirmacao) {
+    if (!await showConfirm(`Tem certeza que quer alterar este usuário para ${novoTipo.toUpperCase()}?`, 'Alterar')) {
         await mostrarGerenciarUsuarios();
         return;
     }
@@ -1056,8 +1055,7 @@ window.deletarUsuario = async function(userId) {
         return;
     }
     
-    const confirmacao = confirm('⚠️ ATENÇÃO! Deseja realmente excluir este usuário permanentemente?');
-    if (!confirmacao) return;
+    if (!await showConfirm('⚠️ ATENÇÃO! Deseja realmente excluir este usuário permanentemente?', 'Excluir', 'Cancelar')) return;
     
     try {
         const response = await fetch(`/usuarios/${userId}`, {
