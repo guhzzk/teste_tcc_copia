@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     const usuarioLogado = localStorage.getItem('usuarioLogado');
     
     if (!usuarioLogado) {
-        alert('Faça login primeiro!');
+        showToast('Faça login primeiro!', 'warning');
         window.location.href = '../login/index.html';
         return;
     }
@@ -24,14 +24,16 @@ document.addEventListener('DOMContentLoaded', async function() {
     await carregarTodosLivros();
     configurarEventos();
     
-    // Se for bibliotecário, adiciona opção de admin
+    // Se for bibliotecário, mostra botão de adicionar livro
     if (usuarioAtual.tipo === 'bibliotecario') {
         const btnAdmin = document.getElementById('btn-adicionar-livro');
-
         if(btnAdmin) {
             btnAdmin.style.display = 'block';
         }
+    }
 
+    // Relatório de empréstimos: visível para bibliotecário E admin
+    if (usuarioAtual.tipo === 'bibliotecario' || usuarioAtual.tipo === 'admin') {
         const relatoriosSection = document.getElementById('relatorios-section');
         if (relatoriosSection) {
             relatoriosSection.style.display = 'block';
@@ -207,7 +209,7 @@ async function buscarLivros() {
     const termo = document.getElementById('pesquisa').value.trim();
     
     if (!termo) {
-        alert('Digite um termo para buscar');
+        showToast('Digite um termo para buscar', 'warning');
         return;
     }
     
@@ -413,12 +415,12 @@ window.reservarLivro = async function(livroId) {
         const data = await response.json();
 
         if (response.ok) {
-            alert('✅ Reserva feita! Você será avisado em "Minhas Reservas" quando o livro voltar.');
+            showToast('Reserva feita! Você será avisado em Minhas Reservas quando o livro voltar.', 'success');
         } else {
-            alert('❌ ' + data.error);
+            showToast(data.error || 'Erro desconhecido', 'error');
         }
     } catch (error) {
-        alert('Erro ao reservar livro');
+        showToast('Erro ao reservar livro', 'error');
     }
 };
 
@@ -430,13 +432,13 @@ window.cancelarReserva = async function(reservaId) {
         const data = await response.json();
 
         if (response.ok) {
-            alert('✅ Reserva cancelada');
+            showToast('Reserva cancelada', 'success');
             mostrarMinhasReservas();
         } else {
-            alert('❌ ' + data.error);
+            showToast(data.error || 'Erro desconhecido', 'error');
         }
     } catch (error) {
-        alert('Erro ao cancelar reserva');
+        showToast('Erro ao cancelar reserva', 'error');
     }
 };
 
@@ -452,14 +454,14 @@ window.renovarEmprestimo = async function(emprestimoId) {
         const data = await response.json();
 
         if (response.ok) {
-            alert(`✅ Empréstimo renovado!\n📅 Nova data: ${new Date(data.nova_data_devolucao).toLocaleDateString()}\n🔄 Renovações restantes: ${data.renovacoes_restantes}`);
+            showToast(`Empréstimo renovado! Nova data: ${new Date(data.nova_data_devolucao).toLocaleDateString()} — Renovações restantes: ${data.renovacoes_restantes}`, 'success', 5000);
             mostrarMeusEmprestimos(); //recarrega a lista
         } else {
-            alert('❌' + data.error);
+            showToast(data.error || 'Erro desconhecido', 'error');
         }
     } catch (error) {
         console.error('erro:', error);
-        alert('erro ao renovar emprestimo');
+        showToast('Erro ao renovar empréstimo', 'error');
     }
 };
 
@@ -475,13 +477,13 @@ async function deletarEmprestimo(idEmprestimo, botaoClicado) {
 
         if(response.ok){
             botaoClicado.closest('.book-card').remove();
-            alert("Emprestimo apagado com sucesso!");
+            showToast("Empréstimo apagado com sucesso!", "success");
         } else {
-            alert("Nao foi possivel apagar emprestimo no servidor.");
+            showToast("Não foi possível apagar empréstimo no servidor.", "error");
         }
     } catch (error) {
         console.error("erro ao deletar:", error);
-        alert("erro de conexao ao tentar apagar emprestimo.");
+        showToast("Erro de conexão ao tentar apagar empréstimo.", "error");
     }
 }
 
@@ -505,7 +507,7 @@ window.solicitarEmprestimo = async function(livroId) {
         const data = await response.json();
         
         if (response.ok) {
-            alert('✅ Empréstimo realizado! Devolva em até 7 dias.');
+            showToast('Empréstimo realizado! Devolva em até 7 dias.', 'success');
             if (categoriaAtual) {
                 buscarPorCategoria(categoriaAtual);
             } else {
@@ -517,10 +519,10 @@ window.solicitarEmprestimo = async function(livroId) {
                 solicitarEmprestimoExtra(livroId);
             }
         } else {
-            alert('❌ ' + data.error);
+            showToast(data.error || 'Erro desconhecido', 'error');
         }
     } catch (error) {
-        alert('Erro ao solicitar empréstimo');
+        showToast('Erro ao solicitar empréstimo', 'error');
     }
 };
 
@@ -535,12 +537,12 @@ window.solicitarEmprestimoExtra = async function(livroId) {
         const data = await response.json();
 
         if (response.ok) {
-            alert('✅ Solicitação enviada! Aguarde a aprovação do bibliotecário.');
+            showToast('Solicitação enviada! Aguarde a aprovação do bibliotecário.', 'success');
         } else {
-            alert('❌ ' + data.error);
+            showToast(data.error || 'Erro desconhecido', 'error');
         }
     } catch (error) {
-        alert('Erro ao enviar solicitação');
+        showToast('Erro ao enviar solicitação', 'error');
     }
 };
 
@@ -555,13 +557,13 @@ window.devolverLivro = async function(emprestimoId) {
         const data = await response.json();
         
         if (response.ok) {
-            alert('✅ Livro devolvido com sucesso!');
+            showToast('Livro devolvido com sucesso!', 'success');
             mostrarMeusEmprestimos();
         } else {
-            alert('❌ ' + data.error);
+            showToast(data.error || 'Erro desconhecido', 'error');
         }
     } catch (error) {
-        alert('Erro ao devolver livro');
+        showToast('Erro ao devolver livro', 'error');
     }
 };
 
@@ -734,11 +736,11 @@ async function enviarLembretes () {
 
         const data = await response.json();
 
-        alert(`📧 ${data.message}\nNotificações enviadas para ${data.notificacoes.filter(n => n.enviado).length} empréstimos`);
+        showToast(data.message, 'info', 5000);
         
     } catch (error) {
         console.error('Erro:', error);
-        alert('erro ao enviar notificacoes');
+        showToast('Erro ao enviar notificações', 'error');
     } finally {
         if (btn) {
             btn.disabled = false;
@@ -754,7 +756,7 @@ async function mostrarGerenciarUsuarios() {
     // VERIFICA SE O ELEMENTO EXISTE
     if (!conteudo) {
         console.error("❌ Elemento 'conteudo-area' não encontrado no HTML!");
-        alert("Erro: elemento de conteúdo não encontrado. Adicione <div id='conteudo-area'> no HTML.");
+        showToast('Erro interno: elemento de conteúdo não encontrado', 'error');
         return;
     }
     
@@ -876,7 +878,7 @@ window.baixarRelatorioPDF = async function() {
         });
 
         if (!response.ok) {
-            alert('❌ Não foi possível gerar o relatório');
+            showToast('Não foi possível gerar o relatório', 'error');
             return;
         }
 
@@ -891,7 +893,7 @@ window.baixarRelatorioPDF = async function() {
         URL.revokeObjectURL(url);
     } catch (error) {
         console.error('Erro ao baixar relatorio:', error);
-        alert('❌ Erro ao baixar relatório em PDF');
+        showToast('Erro ao baixar relatório em PDF', 'error');
     }
 };
 
@@ -962,13 +964,13 @@ window.responderSolicitacao = async function(id, acao) {
         const data = await response.json();
 
         if (response.ok) {
-            alert('✅ ' + data.message);
+            showToast(data.message, 'success');
             mostrarSolicitacoes();
         } else {
-            alert('❌ ' + data.error);
+            showToast(data.error || 'Erro desconhecido', 'error');
         }
     } catch (error) {
-        alert('Erro ao responder solicitação');
+        showToast('Erro ao responder solicitação', 'error');
     }
 };
 
@@ -1033,15 +1035,15 @@ window.alterarTipoUsuario = async function(userId, novoTipo) {
         const data = await response.json();
         
         if (response.ok) {
-            alert(`✅ ${data.message}`);
+            showToast(data.message, 'success');
             await mostrarGerenciarUsuarios();
         } else {
-            alert(`❌ ${data.error || 'Erro ao alterar tipo'}`);
+            showToast(data.error || 'Erro desconhecido', 'error');
             await mostrarGerenciarUsuarios();
         }
     } catch (error) {
         console.error('Erro:', error);
-        alert('❌ Erro de conexão com o servidor');
+        showToast('Erro de conexão com o servidor', 'error');
     }
 };
 
@@ -1050,7 +1052,7 @@ window.deletarUsuario = async function(userId) {
     console.log("Deletando usuário:", userId);
     
     if (userId === usuarioAtual.id) {
-        alert('❌ Você não pode deletar seu próprio usuário!');
+        showToast('Você não pode deletar seu próprio usuário!', 'error');
         return;
     }
     
@@ -1068,14 +1070,14 @@ window.deletarUsuario = async function(userId) {
         const data = await response.json();
         
         if (response.ok) {
-            alert('✅ Usuário excluído com sucesso!');
+            showToast('Usuário excluído com sucesso!', 'success');
             await mostrarGerenciarUsuarios();
         } else {
-            alert(`❌ ${data.error || 'Erro ao excluir usuário'}`);
+            showToast(data.error || 'Erro desconhecido', 'error');
         }
     } catch (error) {
         console.error('Erro:', error);
-        alert('❌ Erro de conexão com o servidor');
+        showToast('Erro de conexão com o servidor', 'error');
     }
 };
 
