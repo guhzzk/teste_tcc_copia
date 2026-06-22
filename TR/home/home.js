@@ -275,7 +275,7 @@ function exibirLivros(livros) {
                 </span>
                 ${livro.quantidade_disponivel > 0 ? 
                     `<button class="btn-borrow" onclick="solicitarEmprestimo(${livro.id})">Pegar Empréstimo</button>` : 
-                    `<button class="btn-borrow disabled" disabled>Indisponível</button>`}
+                    `<button class="btn-borrow btn-reservar" onclick="reservarLivro(${livro.id})">🔖 Reservar</button>`}
             </div>
         </div>
     `).join('');
@@ -285,6 +285,8 @@ function mostrarInicio() {
     document.getElementById('categorias-section').style.display = 'block';
     document.getElementById('livros-section').style.display = 'none';
     document.getElementById('emprestimos-section').style.display = 'none';
+    const reservasSection = document.getElementById('reservas-section');
+    if (reservasSection) reservasSection.style.display = 'none';
     document.getElementById('pesquisa').value = '';
     categoriaAtual = '';
 }
@@ -294,6 +296,8 @@ async function mostrarMeusEmprestimos() {
     document.getElementById('categorias-section').style.display = 'none';
     document.getElementById('livros-section').style.display = 'none';
     document.getElementById('emprestimos-section').style.display = 'block';
+    const reservasSection = document.getElementById('reservas-section');
+    if (reservasSection) reservasSection.style.display = 'none';
     
     const emprestimosGrid = document.getElementById('emprestimos-grid');
     emprestimosGrid.innerHTML = '<p style="text-align:center;">Carregando seus empréstimos...</p>';
@@ -351,7 +355,92 @@ async function mostrarMeusEmprestimos() {
     
 }
 
-// funcao renovar emprestimo
+// funcao mostrar minhas reservas
+async function mostrarMinhasReservas() {
+    document.getElementById('categorias-section').style.display = 'none';
+    document.getElementById('livros-section').style.display = 'none';
+    document.getElementById('emprestimos-section').style.display = 'none';
+    document.getElementById('reservas-section').style.display = 'block';
+
+    const reservasGrid = document.getElementById('reservas-grid');
+    reservasGrid.innerHTML = '<p style="text-align:center;">Carregando suas reservas...</p>';
+
+    try {
+        const response = await fetch(`/usuarios/${usuarioAtual.id}/reservas`);
+        const reservas = await response.json();
+
+        if (!reservas || reservas.length === 0) {
+            reservasGrid.innerHTML = '<p style="text-align:center;">📭 Você não possui reservas no momento</p>';
+            return;
+        }
+
+        reservasGrid.innerHTML = reservas.map((res) => {
+            const disponivel = res.status === 'disponivel';
+            return `
+                <div class="book-card">
+                    <div class="book-cover color-2">🔖</div>
+                    <div class="book-info">
+                        <h3>${res.livro.titulo}</h3>
+                        <p>Autor: ${res.livro.autor}</p>
+                        <p><small>Reservado em: ${new Date(res.data_reserva).toLocaleDateString()}</small></p>
+                        <span class="status ${disponivel ? 'disponivel' : 'ocupado'}">
+                            ${disponivel ? '● Disponível para retirada' : '● Aguardando devolução'}
+                        </span>
+                        <div class="livro-acoes">
+                            <button onclick="cancelarReserva(${res.id})" class="btn-devolver">✖ Cancelar reserva</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error('Erro:', error);
+        reservasGrid.innerHTML = '<p style="text-align:center;">❌ Erro ao carregar reservas</p>';
+    }
+}
+
+window.reservarLivro = async function(livroId) {
+    if (!confirm('Esse livro está indisponível agora. Deseja reservar para quando ele voltar?')) return;
+
+    try {
+        const response = await fetch('/reservas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ usuario_id: usuarioAtual.id, livro_id: livroId })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            alert('✅ Reserva feita! Você será avisado em "Minhas Reservas" quando o livro voltar.');
+        } else {
+            alert('❌ ' + data.error);
+        }
+    } catch (error) {
+        alert('Erro ao reservar livro');
+    }
+};
+
+window.cancelarReserva = async function(reservaId) {
+    if (!confirm('Deseja cancelar essa reserva?')) return;
+
+    try {
+        const response = await fetch(`/reservas/${reservaId}`, { method: 'DELETE' });
+        const data = await response.json();
+
+        if (response.ok) {
+            alert('✅ Reserva cancelada');
+            mostrarMinhasReservas();
+        } else {
+            alert('❌ ' + data.error);
+        }
+    } catch (error) {
+        alert('Erro ao cancelar reserva');
+    }
+};
+
+
 window.renovarEmprestimo = async function(emprestimoId) {
     if(!confirm('deseja renovar este emprestimo por mais 7 dias?')) return;
 
@@ -422,11 +511,36 @@ window.solicitarEmprestimo = async function(livroId) {
             } else {
                 buscarLivros();
             }
+        } else if (data.error && data.error.includes('limite')) {
+            //usuario atingiu o limite de livros simultaneos: oferece solicitar aprovacao
+            if (confirm(`${data.error}.\n\nDeseja enviar uma solicitação para o bibliotecário aprovar esse empréstimo extra?`)) {
+                solicitarEmprestimoExtra(livroId);
+            }
         } else {
             alert('❌ ' + data.error);
         }
     } catch (error) {
         alert('Erro ao solicitar empréstimo');
+    }
+};
+
+window.solicitarEmprestimoExtra = async function(livroId) {
+    try {
+        const response = await fetch('/solicitacoes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ usuario_id: usuarioAtual.id, livro_id: livroId })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            alert('✅ Solicitação enviada! Aguarde a aprovação do bibliotecário.');
+        } else {
+            alert('❌ ' + data.error);
+        }
+    } catch (error) {
+        alert('Erro ao enviar solicitação');
     }
 };
 
@@ -561,6 +675,15 @@ function configurarEventos() {
             mostrarMeusEmprestimos();
         });
     }
+
+    // Botão Minhas Reservas
+    const btnReservas = document.getElementById('btn-reservas');
+    if (btnReservas) {
+        btnReservas.addEventListener('click', function(e) {
+            e.preventDefault();
+            mostrarMinhasReservas();
+        });
+    }
     
     // Botão Sair
     const btnSair = document.getElementById('btn-sair');
@@ -590,6 +713,11 @@ function configurarEventos() {
     const btnVoltarEmprestimos = document.getElementById('btn-voltar-emprestimos');
     if (btnVoltarEmprestimos) {
         btnVoltarEmprestimos.addEventListener('click', mostrarInicio);
+    }
+
+    const btnVoltarReservas = document.getElementById('btn-voltar-reservas');
+    if (btnVoltarReservas) {
+        btnVoltarReservas.addEventListener('click', mostrarInicio);
     }
 }
 
@@ -709,6 +837,9 @@ async function mostrarEstatisticas() {
         }
         
         const stats = await response.json();
+        const percentEmprestado = stats.total_livros > 0
+            ? Math.round((stats.livros_emprestados / (stats.livros_emprestados + (stats.total_livros - stats.livros_emprestados) || 1)) * 100)
+            : 0;
         
         conteudo.innerHTML = `
             <div class="admin-panel">
@@ -719,7 +850,14 @@ async function mostrarEstatisticas() {
                     <div class="stat-card">🔄 Empréstimos Ativos: <strong>${stats.emprestimos_ativos}</strong></div>
                     <div class="stat-card">📖 Livros Emprestados: <strong>${stats.livros_emprestados}</strong></div>
                 </div>
+                <div class="stat-barra-container">
+                    <p><small>Proporção de livros emprestados no momento</small></p>
+                    <div class="stat-barra-fundo">
+                        <div class="stat-barra-preenchida" style="width: ${percentEmprestado}%;">${percentEmprestado}%</div>
+                    </div>
+                </div>
                 <p><small>📅 Última atualização: ${new Date(stats.data).toLocaleString()}</small></p>
+                <button onclick="baixarRelatorioPDF()" class="btn-admin">📄 Baixar relatório em PDF</button>
                 <button onclick="fecharAdminPanel()" class="btn-voltar">← Fechar</button>
             </div>
         `;
@@ -729,6 +867,110 @@ async function mostrarEstatisticas() {
         conteudo.innerHTML = '<p>❌ Erro ao carregar estatísticas. Verifique se o backend está rodando.</p>';
     }
 }
+
+// baixa o relatorio de emprestimos em pdf (usa fetch + blob porque a rota exige cabecalho de autenticacao)
+window.baixarRelatorioPDF = async function() {
+    try {
+        const response = await fetch('/relatorio/emprestimos/pdf', {
+            headers: { 'usuario-id': usuarioAtual.id }
+        });
+
+        if (!response.ok) {
+            alert('❌ Não foi possível gerar o relatório');
+            return;
+        }
+
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'relatorio-emprestimos.pdf';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error('Erro ao baixar relatorio:', error);
+        alert('❌ Erro ao baixar relatório em PDF');
+    }
+};
+
+// mostra as solicitacoes pendentes de emprestimo extra (bibliotecario/admin)
+async function mostrarSolicitacoes() {
+    const conteudo = document.getElementById('conteudo-area');
+    if (!conteudo) return;
+
+    conteudo.innerHTML = '<p>Carregando solicitações...</p>';
+
+    try {
+        const response = await fetch('/solicitacoes', {
+            headers: { 'usuario-id': usuarioAtual.id }
+        });
+
+        if (!response.ok) {
+            throw new Error('Erro ao carregar solicitações');
+        }
+
+        const solicitacoes = await response.json();
+
+        if (solicitacoes.length === 0) {
+            conteudo.innerHTML = `
+                <div class="admin-panel">
+                    <h2>📋 Solicitações de Empréstimo Extra</h2>
+                    <p>📭 Nenhuma solicitação pendente no momento.</p>
+                    <button onclick="fecharAdminPanel()" class="btn-voltar">← Fechar</button>
+                </div>
+            `;
+            return;
+        }
+
+        const listaHtml = solicitacoes.map(sol => `
+            <div class="solicitacao-card">
+                <p><strong>${sol.usuario.nome}</strong> (${sol.usuario.email})</p>
+                <p>📖 ${sol.livro.titulo} — ${sol.livro.autor}</p>
+                <p><small>Solicitado em: ${new Date(sol.data_solicitacao).toLocaleString()}</small></p>
+                <div class="livro-acoes">
+                    <button onclick="responderSolicitacao(${sol.id}, 'aprovar')" class="btn-renovar">✅ Aprovar</button>
+                    <button onclick="responderSolicitacao(${sol.id}, 'rejeitar')" class="btn-devolver">✖ Rejeitar</button>
+                </div>
+            </div>
+        `).join('');
+
+        conteudo.innerHTML = `
+            <div class="admin-panel">
+                <h2>📋 Solicitações de Empréstimo Extra</h2>
+                ${listaHtml}
+                <button onclick="fecharAdminPanel()" class="btn-voltar">← Fechar</button>
+            </div>
+        `;
+
+    } catch (error) {
+        console.error('Erro:', error);
+        conteudo.innerHTML = '<p>❌ Erro ao carregar solicitações.</p>';
+    }
+}
+
+window.responderSolicitacao = async function(id, acao) {
+    if (!confirm(acao === 'aprovar' ? 'Aprovar essa solicitação?' : 'Rejeitar essa solicitação?')) return;
+
+    try {
+        const response = await fetch(`/solicitacoes/${id}/${acao}`, {
+            method: 'PUT',
+            headers: { 'usuario-id': usuarioAtual.id }
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            alert('✅ ' + data.message);
+            mostrarSolicitacoes();
+        } else {
+            alert('❌ ' + data.error);
+        }
+    } catch (error) {
+        alert('Erro ao responder solicitação');
+    }
+};
 
 // Função para mostrar logs (placeholder)
 function mostrarLogs() {
