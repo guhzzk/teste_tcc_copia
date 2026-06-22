@@ -53,3 +53,40 @@
     window.toastInfo     = (msg, dur) => showToast(msg, 'info', dur);
     window.toastAviso    = (msg, dur) => showToast(msg, 'warning', dur);
 })();
+
+
+// ===== MODAL DE CONFIRMAÇÃO (substitui confirm()) =====
+window.showConfirm = function(message, confirmText = 'Confirmar', cancelText = 'Cancelar') {
+    return new Promise((resolve) => {
+        // Remove modal anterior se existir
+        const existing = document.getElementById('confirm-modal');
+        if (existing) existing.remove();
+
+        const overlay = document.createElement('div');
+        overlay.id = 'confirm-modal';
+        overlay.innerHTML = `
+            <div class="confirm-backdrop"></div>
+            <div class="confirm-box">
+                <p class="confirm-msg">${message}</p>
+                <div class="confirm-btns">
+                    <button class="confirm-btn-cancel">${cancelText}</button>
+                    <button class="confirm-btn-ok">${confirmText}</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+
+        // Animação de entrada
+        requestAnimationFrame(() => overlay.classList.add('confirm-show'));
+
+        function close(result) {
+            overlay.classList.remove('confirm-show');
+            setTimeout(() => overlay.remove(), 250);
+            resolve(result);
+        }
+
+        overlay.querySelector('.confirm-btn-ok').addEventListener('click', () => close(true));
+        overlay.querySelector('.confirm-btn-cancel').addEventListener('click', () => close(false));
+        overlay.querySelector('.confirm-backdrop').addEventListener('click', () => close(false));
+    });
+};
