@@ -702,7 +702,7 @@ function configurarEventos() {
     if (btnAdicionar) {
         btnAdicionar.addEventListener("click", function(e) {
             e.preventDefault();
-            window.location.href = "../livros/livros.html";
+            window.location.href = "admin-livros.html";
         });
     }
     
