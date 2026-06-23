@@ -43,7 +43,10 @@
                     <div class="form-group">
                         
                         <label for="email">E-mail</label>
-                        <input type="email" id="email" placeholder="Digite seu e-mail">
+                        <input type="email" id="email" list="sugestao-email-login" autocomplete="off" placeholder="Digite seu e-mail">
+                        <datalist id="sugestao-email-login">
+                            <option id="opcao-dominio-login" value=""></option>
+                        </datalist>
                     </div>
                     <div class="form-group">
                         <label for="password">Senha</label>
