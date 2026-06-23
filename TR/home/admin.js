@@ -1,338 +1,119 @@
-// admin.js - Painel de Administração
-
-// Verifica se já foi declarado para não duplicar
-if (typeof usuarioAtual === 'undefined') {
-    var usuarioAtual = null;
-}
-
-document.addEventListener('DOMContentLoaded', async function() {
-    // Verifica se usuário está logado
-    const usuarioLogado = localStorage.getItem('usuarioLogado');
-    
-    if (!usuarioLogado) {
-        showToast('Faça login primeiro!', 'warning');
-        window.location.href = '../login/index.html';
-        return;
-    }
-    
-    usuarioAtual = JSON.parse(usuarioLogado);
-    
-    // Verifica se é admin
-    if (usuarioAtual.tipo !== 'admin') {
-        showToast('Acesso negado. Área restrita para administradores.', 'error');
-        window.location.href = '../home/home.html';
-        return;
-    }
-    
-    // Mostra nome do admin no header
-    const adminName = document.querySelector('.logo-text');
-    if (adminName) {
-        adminName.innerHTML = `📚 Libro | Admin (${usuarioAtual.nome})`;
-    }
-    
-    // Carrega as listas
-    await carregarListaUsuarios();
-    await carregarListaLivros();
-    
-    // Configura o formulário de adicionar livro
-    const form = document.getElementById('form-adicionar-livro');
-    if (form) {
-        form.addEventListener('submit', adicionarLivro);
-    }
-    
-    // Botão de sair
-    const btnSair = document.getElementById('btn-sair');
-    if (btnSair) {
-        btnSair.addEventListener('click', function() {
-            localStorage.removeItem('usuarioLogado');
-            window.location.href = '../login/index.html';
-        });
-    }
-});
-
-// ========== FUNÇÕES PARA GERENCIAR USUÁRIOS ==========
-
-async function carregarListaUsuarios() {
-    const container = document.getElementById('lista-usuarios-admin');
-    if (!container) return;
-    
-    container.innerHTML = '<div class="loading">🔄 Carregando usuários...</div>';
-    
-    try {
-        const response = await fetch('/admin/usuarios', {
-            headers: { 'usuario-id': usuarioAtual.id }
-        });
-        
-        if (!response.ok) throw new Error('Erro ao carregar usuários');
-        
-        const usuarios = await response.json();
-        
-        if (usuarios.length === 0) {
-            container.innerHTML = '<div class="empty-message">📭 Nenhum usuário cadastrado</div>';
-            return;
-        }
-        
-        // Atualiza o contador
-        const totalUsuarios = document.getElementById('total-usuarios');
-        if (totalUsuarios) totalUsuarios.textContent = usuarios.length;
-        
-        // Monta a tabela
-        let html = '<div class="tabela-responsive"><table class="tabela-usuarios">';
-        html += `
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Nome</th>
-                    <th>Email</th>
-                    <th>Tipo</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody>
-        `;
-        
-        for (const user of usuarios) {
-            html += `
-                <tr>
-                    <td>${user.id}</td>
-                    <td>${user.nome}</td>
-                    <td>${user.email}</td>
-                    <td>
-                        <select class="select-tipo" data-id="${user.id}" onchange="window.alterarTipoUsuario(${user.id}, this.value)">
-                            <option value="aluno" ${user.tipo === 'aluno' ? 'selected' : ''}>📖 Aluno</option>
-                            <option value="bibliotecario" ${user.tipo === 'bibliotecario' ? 'selected' : ''}>📚 Bibliotecário</option>
-                            <option value="admin" ${user.tipo === 'admin' ? 'selected' : ''}>👑 Admin</option>
-                        </select>
-                    </td>
-                    <td>
-                        <button class="btn-deletar" onclick="window.deletarUsuario(${user.id})" ${user.id === usuarioAtual.id ? 'disabled' : ''}>
-                            🗑️
-                        </button>
-                    </td>
-                </tr>
-            `;
-        }
-        
-        html += `
-            </tbody>
-        </table></div>
-        <div class="tabela-footer">
-            <span>Total: ${usuarios.length} usuários</span>
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Admin - Gerenciar Livros | Libro</title>
+    <link rel="stylesheet" href="admin.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#e8491d">
+    <link rel="apple-touch-icon" href="/img/icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Libro">
+    <link rel="stylesheet" href="/toast.css">
+</head>
+<body>
+    <header class="princ">
+        <div class="logo-container">
+            <span class="logo-text">📚 Libro</span>
+            <span class="admin-badge">Admin</span>
         </div>
-        `;
-        
-        container.innerHTML = html;
-        
-    } catch (error) {
-        console.error('Erro:', error);
-        container.innerHTML = '<div class="error-message">❌ Erro ao carregar usuários</div>';
-    }
-}
+        <nav class="navigation">
+            <ul class="nav-menu">
+                <li><a href="home.html" class="nav-link">🏠 Início</a></li>
+                <!--<li><a href="#" id="btn-sair" class="nav-link">🚪 Sair</a></li> -->
+            </ul>
+        </nav>
+    </header>
 
-// Função para alterar tipo de usuário - EXPORTA PARA O WINDOW
-window.alterarTipoUsuario = async function(userId, novoTipo) {
-    console.log("Alterando usuário:", userId, "para:", novoTipo);
-    
-    if (!await showConfirm(`Tem certeza que quer alterar este usuário para ${novoTipo.toUpperCase()}?`, 'Alterar')) {
-        await carregarListaUsuarios();
-        return;
-    }
-    
-    try {
-        const response = await fetch(`/usuarios/${userId}/tipo`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'usuario-id': usuarioAtual.id
-            },
-            body: JSON.stringify({ tipo: novoTipo })
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok) {
-            showToast(data.message, 'success');
-            await carregarListaUsuarios();
-        } else {
-            showToast(data.error || 'Erro ao alterar tipo', 'error');
-            await carregarListaUsuarios();
-        }
-    } catch (error) {
-        console.error('Erro:', error);
-        showToast('Erro de conexão com o servidor', 'error');
-        await carregarListaUsuarios();
-    }
-};
+    <main class="main-content">
+        <div class="container">
+            <h1>
+                <span>📚</span> 
+                Painel de Gerenciamento
+                <span style="font-size: 14px; background: #4CAF50; color: white; padding: 5px 12px; border-radius: 20px;">Administrador</span>
+            </h1>
+            
+            <!-- Formulário de adicionar livro -->
+            <div class="form-container">
+                <h2>
+                    <span>➕</span> 
+                    Adicionar Novo Livro
+                </h2>
+                <form id="form-adicionar-livro">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="required">Título do Livro</label>
+                            <input type="text" id="titulo" placeholder="Ex: Dom Casmurro" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="required">Autor</label>
+                            <input type="text" id="autor" placeholder="Ex: Machado de Assis" required>
+                        </div>
+                        <div class="form-group">
+                            <label>ISBN</label>
+                            <input type="text" id="isbn" placeholder="Código ISBN (opcional)">
+                        </div>
+                        <div class="form-group">
+                            <label>Editora</label>
+                            <input type="text" id="editora" placeholder="Nome da editora">
+                        </div>
+                        <div class="form-group">
+                            <label>Ano de Publicação</label>
+                            <input type="number" id="ano" placeholder="Ex: 1899">
+                        </div>
+                        <div class="form-group">
+                            <label>Categoria</label>
+                            <select id="categoria">
+                                <option value="">Selecione uma categoria</option>
+                                <option value="literatura">📚 Literatura</option>
+                                <option value="ciencias">🧬 Ciências</option>
+                                <option value="tecnologia">💻 Tecnologia</option>
+                                <option value="historia">🏛️ História</option>
+                                <option value="filosofia">🎭 Filosofia</option>
+                                <option value="matematica">📐 Matemática</option>
+                                <option value="artes">🎨 Artes</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Quantidade</label>
+                            <input type="number" id="quantidade_total" value="1" min="1">
+                        </div>
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label>URL da Capa (opcional)</label>
+                            <input type="url" id="capa_url" placeholder="https://exemplo.com/capa-do-livro.jpg">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary">
+                            <span>✓</span> Cadastrar Livro
+                        </button>
+                        <button type="button" class="btn-secondary" onclick="limparFormulario()">
+                            <span>🗑️</span> Limpar
+                        </button>
+                    </div>
+                </form>
+            </div>
 
-// Função para deletar usuário - EXPORTA PARA O WINDOW
-window.deletarUsuario = async function(userId) {
-    console.log("Deletando usuário:", userId);
-    
-    if (userId === usuarioAtual.id) {
-        showToast('Você não pode deletar seu próprio usuário!', 'error');
-        return;
-    }
-    
-    if (!await showConfirm('⚠️ ATENÇÃO! Deseja realmente excluir este usuário permanentemente?', 'Excluir')) return;
-    
-    try {
-        const response = await fetch(`/usuarios/${userId}`, {
-            method: 'DELETE',
-            headers: {
-                'usuario-id': usuarioAtual.id
-            }
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok) {
-            showToast('Usuário excluído com sucesso!', 'success');
-            await carregarListaUsuarios();
-        } else {
-            showToast(data.error || 'Erro ao excluir usuário', 'error');
-        }
-    } catch (error) {
-        console.error('Erro:', error);
-        showToast('Erro de conexão com o servidor', 'error');
-    }
-};
-
-// ========== FUNÇÕES PARA GERENCIAR LIVROS ==========
-
-async function carregarListaLivros() {
-    const container = document.getElementById('lista-livros-admin');
-    if (!container) return;
-    
-    container.innerHTML = '<div class="loading">🔄 Carregando livros...</div>';
-    
-    try {
-        const response = await fetch('/livros');
-        
-        if (!response.ok) throw new Error('Erro ao carregar livros');
-        
-        const livros = await response.json();
-        
-        if (livros.length === 0) {
-            container.innerHTML = '<div class="empty-message">📭 Nenhum livro cadastrado</div>';
-            return;
-        }
-        
-        // Atualiza o contador
-        const totalLivros = document.getElementById('total-livros');
-        if (totalLivros) totalLivros.textContent = livros.length;
-        
-        // Monta os cards de livros
-        let html = '<div class="livros-grid-admin">';
-        
-        for (const livro of livros) {
-            const disponivel = livro.quantidade_disponivel > 0;
-            const capaImg = livro.capa_url
-                ? `<img src="${livro.capa_url}" alt="Capa de ${livro.titulo}" class="livro-capa-admin" onerror="this.style.display='none'">`
-                : '';
-            html += `
-                <div class="livro-card-admin">
-                    ${capaImg}
-                    <div class="livro-header">
-                        <h3 class="livro-titulo">📖 ${livro.titulo}</h3>
-                        <span class="livro-id">ID: ${livro.id}</span>
-                    </div>
-                    <div class="livro-autor">✍️ Autor: ${livro.autor}</div>
-                    <div class="livro-info">
-                        <span class="info-badge">📌 ${livro.categoria || 'Sem categoria'}</span>
-                        <span class="info-badge">🏢 ${livro.editora || 'Sem editora'}</span>
-                        <span class="info-badge">📅 ${livro.ano || 'Ano não informado'}</span>
-                    </div>
-                    <div class="livro-info">
-                        <span class="info-badge">📚 Total: ${livro.quantidade_total}</span>
-                        <span class="info-badge ${disponivel ? 'status-disponivel' : 'status-indisponivel'}">
-                            ${disponivel ? `✅ Disponível: ${livro.quantidade_disponivel}` : '❌ Indisponível'}
-                        </span>
-                    </div>
-                    <div class="livro-acoes-admin">
-                        <button class="btn-editar" onclick="window.editarLivro(${livro.id})">✏️ Editar</button>
-                        <button class="btn-excluir" onclick="window.excluirLivro(${livro.id})">🗑️ Excluir</button>
-                    </div>
+            <!-- Lista de livros cadastrados -->
+            <div class="livros-container">
+                <h2>
+                    <span>📚</span> 
+                    Acervo da Biblioteca
+                    <span id="total-livros" style="font-size: 14px; background: #e9ecef; padding: 5px 12px; border-radius: 20px;"></span>
+                </h2>
+                <div id="lista-livros-admin" class="livros-grid-admin">
+                    <div class="loading">Carregando livros...</div>
                 </div>
-            `;
-        }
-        
-        html += '</div>';
-        container.innerHTML = html;
-        
-    } catch (error) {
-        console.error('Erro:', error);
-        container.innerHTML = '<div class="error-message">❌ Erro ao carregar livros</div>';
-    }
-}
+            </div>
+        </div>
 
-async function adicionarLivro(event) {
-    event.preventDefault();
-    
-    const livro = {
-        titulo: document.getElementById('titulo').value,      // ← Nome correto do campo
-        autor: document.getElementById('autor').value,        // ← Nome correto do campo
-        isbn: document.getElementById('isbn').value,
-        editora: document.getElementById('editora').value,
-        ano: parseInt(document.getElementById('ano').value) || null,
-        categoria: document.getElementById('categoria').value,
-        quantidade_total: parseInt(document.getElementById('quantidade_total').value) || 1,
-        capa_url: document.getElementById('capa_url').value || null
-    };
-    
-    console.log("Enviando livro:", livro); // ← DEBUG
-    
-    try {
-        const response = await fetch('/livros', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'usuario-id': usuarioAtual.id
-            },
-            body: JSON.stringify(livro)  // ← envia o objeto completo
-        });
         
-        const data = await response.json();
-        console.log("Resposta:", data); // ← DEBUG
-        
-        if (response.ok) {
-            showToast('Livro cadastrado com sucesso!', 'success');
-            // Limpa o formulário
-            document.getElementById('form-adicionar-livro').reset();
-            document.getElementById('quantidade_total').value = '1';
-            // Recarrega a lista
-            await carregarListaLivros();
-        } else {
-            showToast(data.error || 'Erro ao cadastrar livro', 'error');
-        }
-    } catch (error) {
-        console.error('Erro:', error);
-        showToast('Erro de conexão com o servidor', 'error');
-    }
-}
+    </main>
 
-window.excluirLivro = async function(livroId) {
-    if (!await showConfirm('Tem certeza que quer excluir este livro permanentemente?', 'Excluir')) return;
-    
-    try {
-        const response = await fetch(`/livros/${livroId}`, {
-            method: 'DELETE',
-            headers: { 'usuario-id': usuarioAtual.id }
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok) {
-            showToast('Livro excluído com sucesso!', 'success');
-            await carregarListaLivros();
-        } else {
-            showToast(data.error || 'Erro ao excluir livro', 'error');
-        }
-    } catch (error) {
-        console.error('Erro:', error);
-        showToast('Erro ao excluir livro', 'error');
-    }
-};
-
-window.editarLivro = function(livroId) {
-    showToast(`Edição em desenvolvimento (ID: ${livroId})`, 'info');
-};
+    <script src="/toast.js"></script>
+    <script src="admin.js"></script>
+    <script src="/pwa-register.js"></script>
+</body>
+</html>
