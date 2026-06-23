@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     const usuarioLogado = localStorage.getItem('usuarioLogado');
     
     if (!usuarioLogado) {
-        alert('Faça login primeiro!');
+        showToast('Faça login primeiro!', 'warning');
         window.location.href = '../login/index.html';
         return;
     }
@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // Verifica se é admin
     if (usuarioAtual.tipo !== 'admin') {
-        alert('Acesso negado. Área restrita para administradores.');
+        showToast('Acesso negado. Área restrita para administradores.', 'error');
         window.location.href = '../home/home.html';
         return;
     }
@@ -133,8 +133,7 @@ async function carregarListaUsuarios() {
 window.alterarTipoUsuario = async function(userId, novoTipo) {
     console.log("Alterando usuário:", userId, "para:", novoTipo);
     
-    const confirmacao = confirm(`⚠️ Tem certeza que quer alterar este usuário para ${novoTipo.toUpperCase()}?`);
-    if (!confirmacao) {
+    if (!await showConfirm(`Tem certeza que quer alterar este usuário para ${novoTipo.toUpperCase()}?`, 'Alterar')) {
         await carregarListaUsuarios();
         return;
     }
@@ -152,15 +151,15 @@ window.alterarTipoUsuario = async function(userId, novoTipo) {
         const data = await response.json();
         
         if (response.ok) {
-            alert(`✅ ${data.message}`);
+            showToast(data.message, 'success');
             await carregarListaUsuarios();
         } else {
-            alert(`❌ ${data.error || 'Erro ao alterar tipo'}`);
+            showToast(data.error || 'Erro ao alterar tipo', 'error');
             await carregarListaUsuarios();
         }
     } catch (error) {
         console.error('Erro:', error);
-        alert('❌ Erro de conexão com o servidor');
+        showToast('Erro de conexão com o servidor', 'error');
         await carregarListaUsuarios();
     }
 };
@@ -170,12 +169,11 @@ window.deletarUsuario = async function(userId) {
     console.log("Deletando usuário:", userId);
     
     if (userId === usuarioAtual.id) {
-        alert('❌ Você não pode deletar seu próprio usuário!');
+        showToast('Você não pode deletar seu próprio usuário!', 'error');
         return;
     }
     
-    const confirmacao = confirm('⚠️ ATENÇÃO! Deseja realmente excluir este usuário permanentemente?');
-    if (!confirmacao) return;
+    if (!await showConfirm('⚠️ ATENÇÃO! Deseja realmente excluir este usuário permanentemente?', 'Excluir')) return;
     
     try {
         const response = await fetch(`/usuarios/${userId}`, {
@@ -188,14 +186,14 @@ window.deletarUsuario = async function(userId) {
         const data = await response.json();
         
         if (response.ok) {
-            alert('✅ Usuário excluído com sucesso!');
+            showToast('Usuário excluído com sucesso!', 'success');
             await carregarListaUsuarios();
         } else {
-            alert(`❌ ${data.error || 'Erro ao excluir usuário'}`);
+            showToast(data.error || 'Erro ao excluir usuário', 'error');
         }
     } catch (error) {
         console.error('Erro:', error);
-        alert('❌ Erro de conexão com o servidor');
+        showToast('Erro de conexão com o servidor', 'error');
     }
 };
 
@@ -297,23 +295,23 @@ async function adicionarLivro(event) {
         console.log("Resposta:", data); // ← DEBUG
         
         if (response.ok) {
-            alert('✅ Livro cadastrado com sucesso!');
+            showToast('Livro cadastrado com sucesso!', 'success');
             // Limpa o formulário
             document.getElementById('form-adicionar-livro').reset();
             document.getElementById('quantidade_total').value = '1';
             // Recarrega a lista
             await carregarListaLivros();
         } else {
-            alert('❌ ' + (data.error || 'Erro ao cadastrar livro'));
+            showToast(data.error || 'Erro ao cadastrar livro', 'error');
         }
     } catch (error) {
         console.error('Erro:', error);
-        alert('❌ Erro de conexão com o servidor');
+        showToast('Erro de conexão com o servidor', 'error');
     }
 }
 
 window.excluirLivro = async function(livroId) {
-    if (!confirm('⚠️ Tem certeza que quer excluir este livro permanentemente?')) return;
+    if (!await showConfirm('Tem certeza que quer excluir este livro permanentemente?', 'Excluir')) return;
     
     try {
         const response = await fetch(`/livros/${livroId}`, {
@@ -324,17 +322,17 @@ window.excluirLivro = async function(livroId) {
         const data = await response.json();
         
         if (response.ok) {
-            alert('✅ Livro excluído com sucesso!');
+            showToast('Livro excluído com sucesso!', 'success');
             await carregarListaLivros();
         } else {
-            alert('❌ ' + data.error);
+            showToast(data.error || 'Erro ao excluir livro', 'error');
         }
     } catch (error) {
         console.error('Erro:', error);
-        alert('❌ Erro ao excluir livro');
+        showToast('Erro ao excluir livro', 'error');
     }
 };
 
 window.editarLivro = function(livroId) {
-    alert(`✏️ Funcionalidade de edição em desenvolvimento.\nID do livro: ${livroId}`);
+    showToast(`Edição em desenvolvimento (ID: ${livroId})`, 'info');
 };
