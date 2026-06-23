@@ -108,15 +108,15 @@ form.addEventListener("submit", async (event) => {
         if (response.ok) {
             localStorage.setItem("token", data.token);
             localStorage.setItem("usuario", JSON.stringify(data.usuario));
-            alert("Login realizado com sucesso!");
-            window.location.href = "../home/home.html";
+            showToast("Login realizado com sucesso!", "success", 2000);
+            setTimeout(() => { window.location.href = "../home/home.html"; }, 1200);
         } else {
-            alert(data.error || "Erro ao fazer login");
+            showToast(data.error || "Erro ao fazer login", "error");
         }
 
     } catch (error) {
         console.error("Erro:", error);
-        alert("Erro de conexão com o servidor");
+        showToast("Erro de conexão com o servidor", "error");
     }
 });
 
@@ -129,7 +129,7 @@ document.getElementById("btn-login").addEventListener("click", async function(e)
     
 
     if (!email || !senha) {
-        alert("preencha todos os campos");
+        showToast("Preencha todos os campos", "warning");
         return;
     }
 
@@ -154,17 +154,17 @@ document.getElementById("btn-login").addEventListener("click", async function(e)
         if(response.ok && data.success) {
             localStorage.setItem("usuarioLogado", JSON.stringify(data.usuario));
             
-            alert(`bem-vindo, ${data.usuario.nome}!`);
+            showToast(`Bem-vindo, ${data.usuario.nome}! 👋`, "success", 2500);
 
             window.location.href = "../home/home.html";
         } else {
 
-            alert(data.error || "erro ao fazer login");
+            showToast(data.error || "Erro ao fazer login", "error");
         }
 
     } catch (error) {
         console.error("erro:", error);
-        alert("erro de conexao com o servidor. verificar backend");
+        showToast("Erro de conexão com o servidor", "error");
 
     } finally {
         btn.disabled = false;
