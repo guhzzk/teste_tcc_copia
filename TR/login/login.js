@@ -10,6 +10,20 @@ nomeInput.addEventListener("blur", checkInputNome);
 emailInput.addEventListener("blur", checkInputEmail);
 senhaInput.addEventListener("blur", checkInputPassword);
 
+// sugestao de dominio em tempo real, enquanto a pessoa digita
+const opcaoDominioLogin = document.getElementById('opcao-dominio-login');
+if (opcaoDominioLogin) {
+    emailInput.addEventListener('input', function() {
+        const valor = emailInput.value.trim();
+        const parteLocal = valor.split('@')[0];
+        if (parteLocal) {
+            opcaoDominioLogin.value = parteLocal + "@escola.pr.gov.br";
+        } else {
+            opcaoDominioLogin.value = '';
+        }
+    });
+}
+
 
 function checkInputNome() {
     const nomeValue = nomeInput.value;
@@ -24,7 +38,8 @@ function checkInputNome() {
 }
 
 function checkInputEmail() {
-    // sugere o dominio da escola se a pessoa digitou so a parte antes do @
+    // completa o dominio da escola so se a pessoa ainda nao digitou nenhum @
+    // (no login nao forcamos o dominio, pra nao quebrar contas antigas de teste)
     const valorAtual = emailInput.value.trim();
     if (valorAtual && !valorAtual.includes('@')) {
         emailInput.value = valorAtual + "@escola.pr.gov.br";
