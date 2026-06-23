@@ -145,10 +145,14 @@ livro.addEventListener("submit", async (event) => {
     const quantidade_disponivel = quantidade_disponivelInput.value;
 
     try {
+        const usuarioLogado = localStorage.getItem('usuarioLogado');
+        const usuario = usuarioLogado ? JSON.parse(usuarioLogado) : null;
+
         const response = await fetch("/livros", {
             method: "POST",
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "usuario-id": usuario ? usuario.id : ""
             },
             body: JSON.stringify({ titulo, autor, isbn, ano, categoria, quantidade_total, quantidade_disponivel })
         });
