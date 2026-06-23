@@ -8,8 +8,10 @@ const sugestaoTexto = document.getElementById('email-sugestao-texto');
 // ── Sugestão visual enquanto digita ──────────────────────────────
 campoEmail.addEventListener('input', function() {
     const valor = this.value.trim();
-    if (valor && !valor.includes('@')) {
-        sugestaoTexto.textContent = valor + DOMINIO_ESCOLA;
+    const parteLocal = valor.split('@')[0];
+    const sugestaoCompleta = parteLocal + DOMINIO_ESCOLA;
+    if (parteLocal && valor.toLowerCase() !== sugestaoCompleta.toLowerCase()) {
+        sugestaoTexto.textContent = sugestaoCompleta;
         sugestaoBox.style.display = 'block';
     } else {
         sugestaoBox.style.display = 'none';
@@ -39,9 +41,12 @@ campoEmail.addEventListener('keydown', function(e) {
 // Fecha a sugestão se o usuário já digitou @ manualmente
 campoEmail.addEventListener('blur', function() {
     const valor = this.value.trim();
-    // Se saiu do campo sem @ e a sugestão ainda está visível, aplica
-    if (valor && !valor.includes('@')) {
-        campoEmail.value = valor + DOMINIO_ESCOLA;
+    // no cadastro, forca o dominio institucional (so esse e aceito)
+    if (valor && !valor.toLowerCase().endsWith(DOMINIO_ESCOLA)) {
+        const parteLocal = valor.split('@')[0];
+        if (parteLocal) {
+            campoEmail.value = parteLocal + DOMINIO_ESCOLA;
+        }
     }
     setTimeout(() => { sugestaoBox.style.display = 'none'; }, 200);
 });
