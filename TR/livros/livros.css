@@ -2,7 +2,7 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: var(--fonte-principal, 'Poppins', sans-serif);
 }
 
 
@@ -20,8 +20,8 @@
     max-width: 800px;
     background: white;
     padding: 2.5rem;
-    border-radius: 12px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    border-radius: 18px;
+    box-shadow: 0 18px 40px rgba(45, 52, 54, 0.12);
 }
 
 .enviarStyle h2 {
@@ -29,6 +29,7 @@
     margin-bottom: 2rem;
     color: #333;
     font-size: 2rem;
+    font-weight: 700;
 }
 
 
@@ -54,35 +55,49 @@ form#livro {
 .form-livro input {
     width: 100%;
     padding: 0.75rem;
-    border: 2px solid #e1e1e1;
-    border-radius: 4px;
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
     font-size: 1rem;
-    transition: border-color 0.3s ease;
+    font-family: inherit;
+    background: #fbfbfc;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.form-livro input:hover {
+    border-color: #d8dbe0;
 }
 
 .form-livro input:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: #764ba2;
+    background: #ffffff;
+    box-shadow: 0 0 0 4px rgba(118, 75, 162, 0.12);
 }
 
 
 button {
     grid-column: span 2; 
     margin-top: 1rem;
-    padding: 0.75rem;
+    padding: 0.85rem;
     background: linear-gradient(135deg, #ec380b 0%, #764ba2 100%);
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: 10px;
     font-size: 1rem;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
-    transition: all 0.3s ease;
+    font-family: inherit;
+    transition: transform 0.2s cubic-bezier(0.4,0,0.2,1), box-shadow 0.2s cubic-bezier(0.4,0,0.2,1), filter 0.2s ease;
 }
 
 button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(118, 75, 162, 0.4);
+    box-shadow: 0 10px 24px rgba(118, 75, 162, 0.35);
+    filter: brightness(1.03);
+}
+
+button:active {
+    transform: translateY(0);
 }
 
 
@@ -93,19 +108,28 @@ button:hover {
     button {
         grid-column: span 1;
     }
+    .princ {
+        padding: 1.25rem;
+    }
+    .enviarStyle {
+        padding: 1.75rem 1.5rem;
+    }
+    .enviarStyle h2 {
+        font-size: 1.6rem;
+    }
 }
 
+/* navegação superior: flui normalmente no fluxo, nunca vaza da tela */
 .local {
-    position: absolute;
-    top: 50px;
-    right: 150px;
+    position: relative;
+    padding: 16px 24px 0;
 }
 
 
 .lista {
     display: flex;
-    flex-direction: column;
-    gap: 15px; 
+    flex-wrap: wrap;
+    gap: 20px; 
     list-style: none;
 }
 
@@ -115,7 +139,7 @@ button:hover {
     color: #333;
     font-weight: 600;
     font-size: 1.1rem;
-    transition: color 0.3s;
+    transition: color 0.2s ease;
 }
 
 .lista a:hover {
