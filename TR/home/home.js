@@ -697,15 +697,6 @@ function configurarEventos() {
         });
     }
     
-    // Botão Adicionar Livro
-    const btnAdicionar = document.getElementById("btn-adicionar-livro");
-    if (btnAdicionar) {
-        btnAdicionar.addEventListener("click", function(e) {
-            e.preventDefault();
-            window.location.href = "admin-livros.html";
-        });
-    }
-    
     // Botões Voltar
     const btnVoltar = document.getElementById('btn-voltar');
     if (btnVoltar) {
