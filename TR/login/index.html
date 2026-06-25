@@ -1,127 +1,79 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
-
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Libro - Login</title>
-
-<link rel="icon" href="/img/icon-192.png">
-
-<link rel="stylesheet" href="login.css">
-
-<link rel="manifest" href="/manifest.json">
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Login</title>
+    <link rel="stylesheet" href="/tokens.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/toast.css">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#e8491d">
+    <link rel="apple-touch-icon" href="/img/icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Libro">
 </head>
-
-
 <body>
 
-
-<main class="container">
-
-
-<section class="card">
-
-
-<img src="/img/icon-192.png" class="logo">
-
-
-<h1>Bem-vindo de volta</h1>
-
-<p class="subtitulo">
-Entre na sua conta Libro
-</p>
-
-
-
-<form id="loginForm">
-
-
-
-<label>Email</label>
-
-<input 
-type="email"
-id="email"
-placeholder="Digite seu email"
-required
->
+   
+   
+    
+    <div class="container">
+        <!-- Lado esquerdo com gradiente e mensagem de boas-vindas -->
+        <div class="left-side">
+            <img src="g10.png" alt="logo">
+            <div class="welcome-content">
+                <h1>Bem-vindo(a)!</h1>
+                <p>Estamos felizes em ter você por aqui</p>
+                <div class="decorative-element"></div>
+            </div>
+        </div>
+        
+        <!-- Lado direito com o formulário de login -->
+        <div class="right-side">
+            <!-- Aqui você coloca o seu formulário de login existente -->
+            <div class="login-container">
+                <h2>Login</h2>
+                <form id="form" class="form">
+                    <div class="form-group">
+                        <label for="nome">Nome</label>
+                        <input type="nome" id="nome" placeholder="digite seu nome">
+                    </div>
 
 
+                    <div class="form-group">
+                        
+                        <label for="email">E-mail</label>
+                        <input type="email" id="email" list="sugestao-email-login" autocomplete="off" placeholder="Digite seu e-mail">
+                        <datalist id="sugestao-email-login">
+                            <option id="opcao-dominio-login" value=""></option>
+                        </datalist>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Senha</label>
+                        <input type="password" id="password" placeholder="Digite sua senha">
+                    </div>
+                    <button type="submit" id="btn-login">Entrar</button>
+                    
 
-<label>Senha</label>
-
-
-<div class="senha-box">
-
-
-<input
-type="password"
-id="senha"
-placeholder="Digite sua senha"
-required
->
-
-
-<button type="button" id="mostrarSenha">
-👁
-</button>
-
-
-</div>
-
-
-
-<button class="entrar" type="submit">
-
-Entrar
-
-</button>
-
+                    <label for="tipo">Tipo de login</label>
+                    <select name="tipo" id="tipo">
+                        <option value="Aluno">Aluno</option>
+                        <option value="Bibliotecario">Bibliotecario</option>
+                        <option value="Bibliotecario">Admin</option>
+                    </select>
+                </form>
+                <p class="signup-link">Não tem uma conta? <a href="cadastro.html">Cadastre-se</a></p>
+            </div>
+        </div>
+    </div> 
+    
+    
 
 
-<div class="links">
-
-
-<a href="#">
-Esqueci minha senha
-</a>
-
-
-<p>
-
-Não tem conta?
-
-<a href="/cadastro">
-
-Criar conta
-
-</a>
-
-</p>
-
-
-</div>
-
-
-</form>
-
-
-
-</section>
-
-
-
-</main>
-
-
-
-<script src="login.js"></script>
-
-
+    <script src="/toast.js"></script>
+    <script src="login.js" defer></script>
+    
+    <script src="/pwa-register.js"></script>
 </body>
-
 </html>
