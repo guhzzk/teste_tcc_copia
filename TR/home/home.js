@@ -809,7 +809,7 @@ function fecharAdminPanel() {
     }
 }
 
-// Função mostrarEstatisticas corrigida
+// Painel de estatísticas — construído do zero
 async function mostrarEstatisticas() {
     const conteudo = document.getElementById('conteudo-area');
     
@@ -818,7 +818,7 @@ async function mostrarEstatisticas() {
         return;
     }
     
-    conteudo.innerHTML = '<p>Carregando estatísticas...</p>';
+    conteudo.innerHTML = '<div class="stats-loading">Carregando estatísticas...</div>';
     
     try {
         const response = await fetch('/admin/estatisticas', {
@@ -830,30 +830,112 @@ async function mostrarEstatisticas() {
         }
         
         const stats = await response.json();
-        const percentEmprestado = stats.total_livros > 0
-            ? Math.round((stats.livros_emprestados / (stats.livros_emprestados + (stats.total_livros - stats.livros_emprestados) || 1)) * 100)
-            : 0;
-        
+
+        const totalCopias = stats.total_copias || 0;
+        const copiasEmprestadas = stats.livros_emprestados || 0;
+        const copiasDisponiveis = stats.copias_disponiveis ?? Math.max(totalCopias - copiasEmprestadas, 0);
+        const utilizacao = totalCopias > 0 ? Math.round((copiasEmprestadas / totalCopias) * 100) : 0;
+
+        // matemática do anel de progresso (SVG)
+        const raio = 52;
+        const circunferencia = 2 * Math.PI * raio;
+        const offset = circunferencia * (1 - utilizacao / 100);
+
+        const dataFormatada = stats.data
+            ? new Date(stats.data).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+            : '-';
+
         conteudo.innerHTML = `
-            <div class="admin-panel">
-                <h2>📊 Estatísticas do Sistema</h2>
-                <div class="stats-grid">
-                    <div class="stat-card">👥 Total Usuários: <strong>${stats.total_usuarios}</strong></div>
-                    <div class="stat-card">📚 Total Livros: <strong>${stats.total_livros}</strong></div>
-                    <div class="stat-card">🔄 Empréstimos Ativos: <strong>${stats.emprestimos_ativos}</strong></div>
-                    <div class="stat-card">📖 Livros Emprestados: <strong>${stats.livros_emprestados}</strong></div>
+            <div class="stats-dashboard">
+                <div class="stats-header">
+                    <div>
+                        <h2>📊 Visão Geral da Biblioteca</h2>
+                        <p class="stats-timestamp">Atualizado em ${dataFormatada}</p>
+                    </div>
+                    <button onclick="mostrarEstatisticas()" class="btn-refresh" title="Atualizar agora">⟳</button>
                 </div>
-                <div class="stat-barra-container">
-                    <p><small>Proporção de livros emprestados no momento</small></p>
-                    <div class="stat-barra-fundo">
-                        <div class="stat-barra-preenchida" style="width: ${percentEmprestado}%;">${percentEmprestado}%</div>
+
+                <div class="stats-hero">
+                    <div class="stats-gauge">
+                        <svg viewBox="0 0 120 120" class="gauge-svg">
+                            <defs>
+                                <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#ec380b" />
+                                    <stop offset="100%" stop-color="#764ba2" />
+                                </linearGradient>
+                            </defs>
+                            <circle class="gauge-track" cx="60" cy="60" r="${raio}"></circle>
+                            <circle class="gauge-fill" cx="60" cy="60" r="${raio}"
+                                stroke-dasharray="${circunferencia}"
+                                stroke-dashoffset="${circunferencia}"
+                                data-offset="${offset}"></circle>
+                        </svg>
+                        <div class="gauge-center">
+                            <span class="gauge-number">${utilizacao}%</span>
+                            <span class="gauge-label">em uso</span>
+                        </div>
+                    </div>
+                    <div class="stats-hero-text">
+                        <h3>Taxa de utilização do acervo</h3>
+                        <p>${copiasEmprestadas} de ${totalCopias} exemplares físicos estão emprestados agora.</p>
+                        <div class="stats-composicao">
+                            <div class="composicao-barra">
+                                <div class="composicao-emprestado" style="width: ${utilizacao}%;"></div>
+                            </div>
+                            <div class="composicao-legenda">
+                                <span><i class="bolinha bolinha-emprestado"></i> Emprestados (${copiasEmprestadas})</span>
+                                <span><i class="bolinha bolinha-disponivel"></i> Disponíveis (${copiasDisponiveis})</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <p><small>📅 Última atualização: ${new Date(stats.data).toLocaleString()}</small></p>
-                <button onclick="baixarRelatorioPDF()" class="btn-admin">📄 Baixar relatório em PDF</button>
-                <button onclick="fecharAdminPanel()" class="btn-voltar">← Fechar</button>
+
+                <div class="stats-cards-grid">
+                    <div class="stat-card-new">
+                        <div class="stat-icon stat-icon-usuarios">👥</div>
+                        <div class="stat-texto">
+                            <span class="stat-value">${stats.total_usuarios}</span>
+                            <span class="stat-label">Usuários cadastrados</span>
+                        </div>
+                    </div>
+                    <div class="stat-card-new">
+                        <div class="stat-icon stat-icon-acervo">📚</div>
+                        <div class="stat-texto">
+                            <span class="stat-value">${stats.total_livros}</span>
+                            <span class="stat-label">Títulos no acervo</span>
+                        </div>
+                    </div>
+                    <div class="stat-card-new">
+                        <div class="stat-icon stat-icon-emprestimos">🔄</div>
+                        <div class="stat-texto">
+                            <span class="stat-value">${stats.emprestimos_ativos}</span>
+                            <span class="stat-label">Empréstimos ativos</span>
+                        </div>
+                    </div>
+                    <div class="stat-card-new">
+                        <div class="stat-icon stat-icon-disponivel">✅</div>
+                        <div class="stat-texto">
+                            <span class="stat-value">${copiasDisponiveis}</span>
+                            <span class="stat-label">Exemplares disponíveis</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stats-actions">
+                    <button onclick="baixarRelatorioPDF()" class="btn-admin">📄 Baixar relatório em PDF</button>
+                    <button onclick="fecharAdminPanel()" class="btn-voltar">← Fechar</button>
+                </div>
             </div>
         `;
+
+        // anima o anel de progresso depois de inserir no DOM
+        requestAnimationFrame(() => {
+            const aro = conteudo.querySelector('.gauge-fill');
+            if (aro) {
+                aro.style.transition = 'stroke-dashoffset 1s cubic-bezier(0.4,0,0.2,1)';
+                aro.style.strokeDashoffset = aro.dataset.offset;
+            }
+        });
         
     } catch (error) {
         console.error('Erro:', error);
