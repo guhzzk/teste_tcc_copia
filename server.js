@@ -913,15 +913,20 @@ server.get("/admin/estatisticas", isAdmin, async (req, res) => {
 		
 		const todosLivros = await livros.findAll();
 		let livrosEmprestados = 0;
+		let totalCopias = 0;
 		for (const livro of todosLivros) {
+			totalCopias += (livro.quantidade_total || 0);
 			livrosEmprestados += (livro.quantidade_total - livro.quantidade_disponivel);
 		}
+		const copiasDisponiveis = totalCopias - livrosEmprestados;
 
 		res.json({
 			total_usuarios: totalUsuarios,
 			total_livros: totalLivros,
 			emprestimos_ativos: totalEmprestimos,
 			livros_emprestados: livrosEmprestados || 0,
+			total_copias: totalCopias,
+			copias_disponiveis: copiasDisponiveis < 0 ? 0 : copiasDisponiveis,
 			data: new Date() 
 		});
 	} catch (error) {
