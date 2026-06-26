@@ -366,40 +366,250 @@ body {
 
 /* (estilos do badge de conta consolidados no topo do arquivo) */
 
+.relatorios-section {
+    padding: 40px 60px;
+}
+
+.relatorios-section .container {
+    max-width: 1300px;
+    margin: 0 auto;
+    background: white;
+    border-radius: var(--raio-lg, 22px);
+    padding: 30px;
+    box-shadow: var(--sombra-card, 0 8px 24px rgba(45,52,54,0.08));
+}
+
+.relatorio-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-bottom: 20px;
+}
+
+.relatorio-toolbar h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #2d3436;
+    margin: 0;
+}
+
+.btn-notificacao {
+    background: linear-gradient(135deg, #ec380b, #764ba2);
+    color: white;
+    border: none;
+    padding: 11px 20px;
+    border-radius: var(--raio-sm, 8px);
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: transform 0.2s cubic-bezier(0.4,0,0.2,1), box-shadow 0.2s ease;
+}
+
+.btn-notificacao:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(118, 75, 162, 0.35);
+}
+
+.tabela-scroll {
+    overflow-x: auto;
+    border-radius: var(--raio-md, 14px);
+    border: 1px solid var(--cor-borda, #e4e7eb);
+}
+
 .tabela-emprestimos {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 20px;
+    margin-top: 0;
+    min-width: 560px;
 }
 
 .tabela-emprestimos th,
 .tabela-emprestimos td {
-    border: 1px solid #ddd;
-    padding: 12px;
+    padding: 13px 16px;
     text-align: left;
+    font-size: 13.5px;
 }
 
-.tabela-emprestimos th {
-    background-color: #4CAF50;
+.tabela-emprestimos thead th {
+    background: linear-gradient(135deg, #ec380b, #764ba2);
     color: white;
+    font-weight: 700;
+    font-size: 12.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
 }
 
-.tabela-emprestimos tr:nth-child(even) {
-    background-color: #f2f2f2;
+.tabela-emprestimos tbody tr {
+    background: white;
 }
 
-.status-ativo {
-    color: #4CAF50;
-    font-weight: bold;
+.tabela-emprestimos tbody tr:nth-child(even) {
+    background: var(--cor-fundo-sutil, #f8f9fb);
 }
 
-.status-devolvido {
-    color: #666;
+.tabela-emprestimos tbody tr:hover {
+    background: rgba(118, 75, 162, 0.06);
 }
 
-.status-atrasado {
-    color: #f44336;
-    font-weight: bold;
+.tabela-emprestimos tbody td {
+    border-bottom: 1px solid var(--cor-borda, #e4e7eb);
+    color: #2d3436;
+}
+
+.tabela-vazia {
+    text-align: center !important;
+    padding: 36px 16px !important;
+    color: var(--cor-texto-suave, #636e72);
+}
+
+/* Badges de status */
+.status-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: var(--raio-pill, 999px);
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: capitalize;
+    letter-spacing: 0.2px;
+}
+
+.status-badge.status-ativo {
+    background: rgba(46, 204, 113, 0.14);
+    color: #1e8449;
+}
+
+.status-badge.status-devolvido {
+    background: rgba(99, 110, 114, 0.12);
+    color: #636e72;
+}
+
+.status-badge.status-atrasado {
+    background: rgba(231, 76, 60, 0.14);
+    color: #c0392b;
+}
+
+@media (max-width: 768px) {
+    .relatorios-section {
+        padding: 24px 16px;
+    }
+
+    .relatorios-section .container {
+        padding: 18px;
+        border-radius: var(--raio-md, 14px);
+    }
+
+    .relatorio-toolbar h2 {
+        font-size: 17px;
+    }
+
+    .tabela-emprestimos th,
+    .tabela-emprestimos td {
+        padding: 10px 12px;
+        font-size: 12.5px;
+    }
+}
+
+/* ===== Painel de Administração ===== */
+.admin-menu {
+    background: white;
+    padding: 26px;
+    border-radius: var(--raio-lg, 22px);
+    margin-bottom: 30px;
+    box-shadow: var(--sombra-card, 0 8px 24px rgba(45,52,54,0.08));
+}
+
+.admin-menu h3 {
+    margin: 0 0 18px 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #2d3436;
+}
+
+.admin-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+}
+
+.btn-admin {
+    background: white;
+    color: #2d3436;
+    border: 1.5px solid var(--cor-borda, #e4e7eb);
+    padding: 14px 16px;
+    border-radius: var(--raio-md, 14px);
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-align: left;
+    transition: transform 0.2s cubic-bezier(0.4,0,0.2,1), box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.btn-admin-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.btn-admin:hover {
+    transform: translateY(-3px);
+    border-color: transparent;
+    background: linear-gradient(135deg, rgba(236,56,11,0.08), rgba(118,75,162,0.08));
+    box-shadow: var(--sombra-card, 0 8px 24px rgba(45,52,54,0.08));
+}
+
+.admin-extra-label {
+    font-size: 12px;
+    color: var(--cor-texto-suave, #636e72);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 700;
+    margin: 24px 0 12px 0;
+}
+
+.btn-admin-super {
+    background: white;
+    color: #c0392b;
+    border: 1.5px solid rgba(231, 76, 60, 0.3);
+    padding: 14px 16px;
+    border-radius: var(--raio-md, 14px);
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-align: left;
+    transition: transform 0.2s cubic-bezier(0.4,0,0.2,1), box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.btn-admin-super:hover {
+    transform: translateY(-3px);
+    background: rgba(231, 76, 60, 0.08);
+    box-shadow: 0 8px 20px rgba(231, 76, 60, 0.18);
+}
+
+@media (max-width: 640px) {
+    .admin-menu {
+        padding: 18px;
+    }
+
+    .admin-buttons {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 420px) {
+    .admin-buttons {
+        grid-template-columns: 1fr;
+    }
 }
 
 
@@ -431,52 +641,10 @@ body {
     cursor: pointer;
 }
 
-.btn-notificacao {
-    background: #9C27B0;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 6px;
-    cursor: pointer;
-    margin-left: 10px;
-}
-
 .livro-acoes {
     display: flex;
     gap: 10px;
     align-items: center;
-}
-
-.admin-menu {
-    background: #f5f5f5;
-    padding: 20px;
-    border-radius: 12px;
-    margin-bottom: 30px;
-}
-
-.admin-buttons {
-    display: flex;
-    gap: 15px;
-    flex-wrap: wrap;
-    margin-top: 15px;
-}
-
-.btn-admin {
-    background: #4CAF50;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 6px;
-    cursor: pointer;
-}
-
-.btn-admin-super {
-    background: #f44336;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 6px;
-    cursor: pointer;
 }
 
 .admin-panel {
