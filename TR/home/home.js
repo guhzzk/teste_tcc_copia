@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (usuarioAtual.tipo === 'bibliotecario') {
         const btnContainer = document.getElementById('lembretes');
         if (btnContainer) {
-            btnContainer.innerHTML += '<button id="btn-enviar-lembretes" class="btn-notificacao">📧 Enviar Lembretes</button>';
+            btnContainer.innerHTML = '<button id="btn-enviar-lembretes" class="btn-notificacao">📧 Enviar Lembretes</button>';
             document.getElementById('btn-enviar-lembretes').addEventListener('click', enviarLembretes);
         }
     }
@@ -607,8 +607,8 @@ async function carregarRelatoriosEmprestimos() {
 
         tabelaBody.innerHTML = "";
 
-        if(emprestimos.lenght === 0) {
-            tabelaBody.innerHTML = '<tr><tdcolspna="3">Nenhum emprestimo encontrado</td></tr>';
+        if (emprestimos.length === 0) {
+            tabelaBody.innerHTML = '<tr><td colspan="4" class="tabela-vazia">📭 Nenhum empréstimo encontrado</td></tr>';
             return;
         }
 
@@ -623,8 +623,7 @@ async function carregarRelatoriosEmprestimos() {
                 <td>${nomeUsuario}</td>
                 <td>${tituloLivro}</td>
                 <td>${isbnLivro}</td>
-                <td class="status-${status}">${status}</td>
-
+                <td><span class="status-badge status-${status}">${status}</span></td>
             `;
                 
             tabelaBody.appendChild(linha);
@@ -635,7 +634,7 @@ async function carregarRelatoriosEmprestimos() {
         console.error("erro ao carregar relatorio:", error);
         const tabelaBody = document.querySelector("#tabela-emprestimos tbody");
         if (tabelaBody) {
-            tabelaBody.innerHTML = '<tr><td colspan="3">Erro ao carregar emprestimos</td></tr>'
+            tabelaBody.innerHTML = '<tr><td colspan="4" class="tabela-vazia">❌ Erro ao carregar empréstimos</td></tr>'
         }
     }
            
