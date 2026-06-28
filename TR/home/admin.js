@@ -5,6 +5,9 @@ if (typeof usuarioAtual === 'undefined') {
     var usuarioAtual = null;
 }
 
+// guarda o id do livro sendo editado (null = formulario esta em modo "cadastrar")
+let livroEmEdicaoId = null;
+
 document.addEventListener('DOMContentLoaded', async function() {
     // Verifica se usuário está logado
     const usuarioLogado = localStorage.getItem('usuarioLogado');
@@ -281,31 +284,33 @@ async function adicionarLivro(event) {
         quantidade_total: parseInt(document.getElementById('quantidade_total').value) || 1,
         capa_url: document.getElementById('capa_url').value || null
     };
+
+    const estaEditando = livroEmEdicaoId !== null;
+    const url = estaEditando ? `/livros/${livroEmEdicaoId}` : '/livros';
+    const metodo = estaEditando ? 'PUT' : 'POST';
     
-    console.log("Enviando livro:", livro); // ← DEBUG
+    console.log("Enviando livro:", livro, "| editando:", estaEditando); // ← DEBUG
     
     try {
-        const response = await fetch('/livros', {
-            method: 'POST',
+        const response = await fetch(url, {
+            method: metodo,
             headers: {
                 'Content-Type': 'application/json',
                 'usuario-id': usuarioAtual.id
             },
-            body: JSON.stringify(livro)  // ← envia o objeto completo
+            body: JSON.stringify(livro)
         });
         
         const data = await response.json();
         console.log("Resposta:", data); // ← DEBUG
         
         if (response.ok) {
-            showToast('Livro cadastrado com sucesso!', 'success');
-            // Limpa o formulário
-            document.getElementById('form-adicionar-livro').reset();
-            document.getElementById('quantidade_total').value = '1';
+            showToast(estaEditando ? 'Livro atualizado com sucesso!' : 'Livro cadastrado com sucesso!', 'success');
+            limparFormulario();
             // Recarrega a lista
             await carregarListaLivros();
         } else {
-            showToast(data.error || 'Erro ao cadastrar livro', 'error');
+            showToast(data.error || 'Erro ao salvar livro', 'error');
         }
     } catch (error) {
         console.error('Erro:', error);
@@ -336,6 +341,77 @@ window.excluirLivro = async function(livroId) {
     }
 };
 
-window.editarLivro = function(livroId) {
-    showToast(`Funcionalidade de edição em desenvolvimento (livro ID: ${livroId})`, 'info');
+// busca os dados do livro e preenche o formulario para edicao
+window.editarLivro = async function(livroId) {
+    try {
+        const response = await fetch(`/livros/${livroId}`, {
+            headers: { 'usuario-id': usuarioAtual.id }
+        });
+        const livro = await response.json();
+
+        if (!response.ok) {
+            showToast(livro.error || 'Erro ao buscar livro', 'error');
+            return;
+        }
+
+        document.getElementById('titulo').value = livro.titulo || '';
+        document.getElementById('autor').value = livro.autor || '';
+        document.getElementById('isbn').value = livro.isbn || '';
+        document.getElementById('editora').value = livro.editora || '';
+        document.getElementById('ano').value = livro.ano || '';
+        document.getElementById('categoria').value = livro.categoria || '';
+        document.getElementById('quantidade_total').value = livro.quantidade_total || 1;
+        document.getElementById('capa_url').value = livro.capa_url || '';
+
+        livroEmEdicaoId = livro.id;
+        ativarModoEdicaoNaTela();
+
+        // leva o usuario at o formulario, ja que a lista fica mais abaixo na pagina
+        document.getElementById('form-adicionar-livro').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    } catch (error) {
+        console.error('Erro:', error);
+        showToast('Erro ao carregar dados do livro', 'error');
+    }
 };
+
+// ajusta os textos da tela para o modo de edicao
+function ativarModoEdicaoNaTela() {
+    const titulo = document.querySelector('.form-container h2');
+    if (titulo) {
+        titulo.innerHTML = '<span>✏️</span> Editando Livro';
+    }
+    const botaoSalvar = document.querySelector('#form-adicionar-livro .btn-primary');
+    if (botaoSalvar) {
+        botaoSalvar.innerHTML = '<span>✓</span> Salvar Alterações';
+    }
+    const botaoLimpar = document.querySelector('#form-adicionar-livro .btn-secondary');
+    if (botaoLimpar) {
+        botaoLimpar.innerHTML = '<span>✖</span> Cancelar Edição';
+    }
+}
+
+// limpa o formulario e volta para o modo "cadastrar novo livro"
+window.limparFormulario = function() {
+    document.getElementById('form-adicionar-livro').reset();
+    document.getElementById('quantidade_total').value = '1';
+
+    livroEmEdicaoId = null;
+
+    const titulo = document.querySelector('.form-container h2');
+    if (titulo) {
+        titulo.innerHTML = '<span>➕</span> Adicionar Novo Livro';
+    }
+    const botaoSalvar = document.querySelector('#form-adicionar-livro .btn-primary');
+    if (botaoSalvar) {
+        botaoSalvar.innerHTML = '<span>✓</span> Cadastrar Livro';
+    }
+    const botaoLimpar = document.querySelector('#form-adicionar-livro .btn-secondary');
+    if (botaoLimpar) {
+        botaoLimpar.innerHTML = '<span>🗑️</span> Limpar';
+    }
+};
+
+function limparFormulario() {
+    window.limparFormulario();
+}
