@@ -2,12 +2,23 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
+    <script>
+    (function() {
+        try {
+            var salvo = localStorage.getItem('libro-tema');
+            var prefereEscuro = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            var tema = salvo || (prefereEscuro ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-theme', tema);
+        } catch (e) {}
+    })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Libro | Biblioteca Digital</title>
     <link rel="stylesheet" href="/tokens.css">
     <link rel="stylesheet" href="home.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/toast.css">
+    <link rel="stylesheet" href="/theme.css">
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#e8491d">
     <link rel="apple-touch-icon" href="/img/icon-192.png">
@@ -35,6 +46,7 @@
                 <li><a href="#" id="btn-reservas" class="nav-link">Reservas</a></li>
                 <li><a href="#" id="btn-conta" class="nav-link account-btn">Minha Conta</a></li>
                 <li><a href="#" id="btn-sair" class="nav-link">Sair</a></li>
+                <li><button class="btn-tema" onclick="libroAlternarTema()" aria-label="Alternar modo escuro" title="Modo escuro">🌙</button></li>
             </ul>
         </nav>
     </header>
@@ -169,8 +181,8 @@
     </footer>
 
     <script src="/toast.js"></script>
+    <script src="/theme-toggle.js"></script>
     <script src="home.js"></script>
-    <script src="admin.js"></script>
     <script src="/pwa-register.js"></script>
 </body>
 </html>
