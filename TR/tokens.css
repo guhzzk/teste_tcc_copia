@@ -98,7 +98,8 @@
    COMPONENTE: campo de senha com botão de mostrar/ocultar
    ============================================================ */
 .campo-senha {
-    position: relative;
+    position: relative !important;
+    display: block;
 }
 
 .campo-senha input {
