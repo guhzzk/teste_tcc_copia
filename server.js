@@ -826,6 +826,68 @@ server.post("/livros", isAdminOrBibliotecario, async (req, res) => {
     }
 });
 
+//busca um livro especifico (usado para preencher o formulario de edicao)
+server.get("/livros/:id", async (req, res) => {
+    try {
+        const livro = await livros.findByPk(req.params.id);
+        if (!livro) {
+            return res.status(404).json({ error: "livro nao encontrado" });
+        }
+        res.json(livro);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+//edita um livro existente (admin e bibliotecario)
+server.put("/livros/:id", isAdminOrBibliotecario, async (req, res) => {
+    try {
+        const livro = await livros.findByPk(req.params.id);
+        if (!livro) {
+            return res.status(404).json({ error: "livro nao encontrado" });
+        }
+
+        const {
+            titulo,
+            autor,
+            isbn,
+            editora,
+            ano,
+            categoria,
+            quantidade_total,
+            capa_url
+        } = req.body;
+
+        if (!titulo || !autor) {
+            return res.status(400).json({ error: "Campos obrigatórios: titulo e autor" });
+        }
+
+        const novoTotal = parseInt(quantidade_total) || livro.quantidade_total;
+
+        //preserva quantos exemplares estao emprestados, ajustando so a disponibilidade
+        const emprestadosAtualmente = livro.quantidade_total - livro.quantidade_disponivel;
+        let novaDisponivel = novoTotal - emprestadosAtualmente;
+        if (novaDisponivel < 0) novaDisponivel = 0;
+
+        await livro.update({
+            titulo: titulo,
+            autor: autor,
+            isbn: isbn || null,
+            editora: editora || null,
+            ano: ano || null,
+            categoria: categoria || null,
+            quantidade_total: novoTotal,
+            quantidade_disponivel: novaDisponivel,
+            capa_url: capa_url || null
+        });
+
+        res.json({ message: "Livro atualizado com sucesso!", livro: livro });
+    } catch (error) {
+        console.error("Erro ao editar livro:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 //apenas admin pode deletar qualquer livro
 server.delete("/livros/:id", isAdmin, async (req, res) => {
 	try {
