@@ -31,7 +31,7 @@ function checkInputNome() {
         errorInput(nomeInput, "O nome é obrigatório.");
         return false;
     } else {
-        const formItem = nomeInput.parentElement;
+        const formItem = nomeInput.closest('.form-group');
         formItem.className = "form-group";
         return true;
     }
@@ -50,7 +50,7 @@ function checkInputEmail() {
         errorInput(emailInput, "O email é obrigatório.");
         return false;
     } else {
-        const formItem = emailInput.parentElement;
+        const formItem = emailInput.closest('.form-group');
         formItem.className = "form-group";
         return true;
     }
@@ -63,7 +63,7 @@ function checkInputTipo(){
     return false;
 
   } else {
-    const formItem = tipoInput.parentElement;
+    const formItem = tipoInput.closest('.form-group');
     formItem.className = "form-group";
     return true;
   }
@@ -78,14 +78,14 @@ function checkInputPassword() {
         errorInput(senhaInput, "A senha precisa ter no mínimo 8 caracteres.");
         return false;
     } else {
-        const formItem = senhaInput.parentElement;
+        const formItem = senhaInput.closest('.form-group');
         formItem.className = "form-group";
         return true;
     }
 }
 
 function errorInput(input, message) {
-    const formItem = input.parentElement;
+    const formItem = input.closest('.form-group');
     const textMessage = formItem.querySelector("a") || document.createElement("a");
     textMessage.innerText = message;
     formItem.className = "form-group error";
